@@ -13,6 +13,8 @@ System.out.println(source); // save this output as ExampleBuilder.java
 The example class looks like this:
 ```java
 // Example.java
+package test.classes;
+
 public class Example {
     private String name;
     private int age;
@@ -37,24 +39,36 @@ public class Example {
 The generated builder class looks like this:
 ```java
 // ExampleBuilder.java
-public class Example {
-    private String name;
+package test.classes;
+
+import test.classes.Example;
+
+public final class ExampleBuilder { 
     private int age;
+    private String name;
 
-    public String getName() {
-        return name;
+    private ExampleBuilder() { }
+
+    public static ExampleBuilder aExample() {
+        return new ExampleBuilder();
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public Example build() {
+        Example object = new Example();
+        object.setAge(age);
+        object.setName(name);
+
+        return object;
     }
 
-    public int getAge() {
-        return age;
-    }
-
-    public void setAge(int age) {
+    public ExampleBuilder age(int age) {
         this.age = age;
+        return this;
+    }
+
+    public ExampleBuilder name(String name) {
+        this.name = name;
+        return this;
     }
 }
 ```
