@@ -1,8 +1,12 @@
 package com.josketres.builderator;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import test.classes.NormalJavaBean;
 
+import javax.tools.JavaCompiler;
+import javax.tools.ToolProvider;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -10,17 +14,10 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.concurrent.Callable;
 
-import javax.tools.JavaCompiler;
-import javax.tools.ToolProvider;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
-import com.josketres.builderator.Generator;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
-import test.classes.NormalJavaBean;
-
-public class GeneratorTest {
+public class BuilderatorTest {
     private static final int COMPILER_SUCCESS_CODE = 0;
 
     private static File root;
@@ -46,7 +43,7 @@ public class GeneratorTest {
     private void assertBuilderCanBeUsed() throws Exception {
 
         URLClassLoader classLoader = URLClassLoader
-                .newInstance(new URL[] { root.toURI().toURL() });
+                .newInstance(new URL[]{root.toURI().toURL()});
         Class<?> cls = Class.forName(NormalJavaBean.class.getPackage()
                 .getName() + ".BuilderTester", true, classLoader);
         @SuppressWarnings("unchecked")
@@ -59,8 +56,7 @@ public class GeneratorTest {
     }
 
     private File createBuilder() throws IOException {
-        Generator generator = new Generator();
-        String source = generator.generate(NormalJavaBean.class);
+        String source = Builderator.builderFor(NormalJavaBean.class);
         return createFile(source, "NormalJavaBeanBuilder",
                 NormalJavaBean.class.getPackage().getName());
     }
@@ -117,7 +113,7 @@ public class GeneratorTest {
     }
 
     private void assertCompilesWithoutErrors(File builder,
-            File builderTester) throws Exception {
+                                             File builderTester) throws Exception {
 
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
         int result = compiler.run(null, System.out, System.err,
