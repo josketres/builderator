@@ -17,4 +17,6 @@ dependencies {
     testCompile 'org.hamcrest:hamcrest-library:1.3'
 
 }
+
+// http://zserge.com/blog/gradle-maven-publish.html
 //apply from: 'maven-push.gradle'
