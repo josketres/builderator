@@ -7,7 +7,7 @@ Test data builder generator for Java
 License
 -------
 
-    Copyright 2014 Josué Zarzosa de la Torre
+    Copyright 2015 Josué Zarzosa de la Torre
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
