@@ -7,11 +7,12 @@ Usage
 ---
 Use __Builderator__ to generate the source code of a test data builder for a given class.
 ```java
-
 // Generates the source code for a test data builder for the Example class
 String source = Builderator.builderFor(Example.class);
 System.out.println(source); // save this output as ExampleBuilder.java
-
+```
+The example class looks like this:
+```java
 // Example.java
 public class Example {
     private String name;
@@ -33,7 +34,30 @@ public class Example {
         this.age = age;
     }
 }
+```
+The generated builder class looks like this:
+```java
+// ExampleBuilder.java
+public class Example {
+    private String name;
+    private int age;
 
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+}
 ```
 
 License
