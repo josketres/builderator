@@ -13,7 +13,7 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
-public class ConstructorAnalyser {
+class ConstructorAnalyser {
 
     public ConstructorSignature getSignature(
             final Constructor<?> constructor)

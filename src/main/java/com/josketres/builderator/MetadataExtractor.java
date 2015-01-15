@@ -1,13 +1,12 @@
 package com.josketres.builderator;
 
-import java.beans.PropertyDescriptor;
-
 import com.josketres.builderator.model.Property;
 import com.josketres.builderator.model.TargetClass;
-
 import org.apache.commons.beanutils.PropertyUtils;
 
-public class MetadataExtractor {
+import java.beans.PropertyDescriptor;
+
+class MetadataExtractor {
     private TargetClass data;
     private Class<?> targetClass;
 
@@ -67,8 +66,8 @@ public class MetadataExtractor {
     }
 
     public Property createProperty(String type, String name,
-            String setterName, String typeQualifiedName,
-            boolean shouldBeImported) {
+                                   String setterName, String typeQualifiedName,
+                                   boolean shouldBeImported) {
         Property property = new Property();
         property.setType(type);
         property.setName(name);
