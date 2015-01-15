@@ -5,7 +5,7 @@ A simple test data builder generator for Java
 
 Usage
 ---
-Calcular el rfc de una persona física es muy sencillo:
+Use __Builderator__ to generate the source code of a test data builder for a given class.
 ```java
 
 // Generates the source code for a test data builder for the Example class
