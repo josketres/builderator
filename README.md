@@ -73,6 +73,23 @@ public final class ExampleBuilder {
 }
 ```
 
+Download
+--------
+
+Baja directamente [el JAR de la versión más actual][2] o declara la dependencia vía Maven:
+```xml
+<dependency>
+  <groupId>com.josketres</groupId>
+  <artifactId>builderator</artifactId>
+  <version>1.0.0</version>
+  <scope>test</scope>
+</dependency>
+```
+o con Gradle:
+```groovy
+testCompile 'com.josketres:builderator:1.0.0'
+```
+
 License
 -------
 
