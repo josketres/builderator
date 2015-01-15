@@ -76,7 +76,7 @@ public final class ExampleBuilder {
 Download
 --------
 
-Baja directamente [el JAR de la versión más actual][2] o declara la dependencia vía Maven:
+Download the latest JAR or grab via Maven:
 ```xml
 <dependency>
   <groupId>com.josketres</groupId>
@@ -85,7 +85,7 @@ Baja directamente [el JAR de la versión más actual][2] o declara la dependenci
   <scope>test</scope>
 </dependency>
 ```
-o con Gradle:
+or Gradle:
 ```groovy
 testCompile 'com.josketres:builderator:1.0.0'
 ```
