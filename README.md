@@ -1,8 +1,40 @@
 # builderator
-Test data builder generator for Java
+A simple test data builder generator for Java
 
 [![Build Status](https://travis-ci.org/josketres/builderator.svg?branch=master)](https://travis-ci.org/josketres/builderator)
 
+Usage
+---
+Calcular el rfc de una persona física es muy sencillo:
+```java
+
+// Generates the source code for a test data builder for the Example class
+String source = Builderator.builderFor(Example.class);
+System.out.println(source);
+
+// Person.java
+public class Example {
+    private String name;
+    private int age;
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+}
+
+```
 
 License
 -------
