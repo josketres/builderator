@@ -1,7 +1,7 @@
 apply plugin: 'java'
 
 sourceCompatibility = 1.6
-version = '1.0.0-SNAPSHOT'
+version = '1.0.0'
 
 repositories {
     mavenCentral()
@@ -19,4 +19,6 @@ dependencies {
 }
 
 // http://zserge.com/blog/gradle-maven-publish.html
-//apply from: 'maven-push.gradle'
+// ./gradlew uploadArchives
+// https://oss.sonatype.org/#stagingRepositories
+apply from: 'maven-push.gradle'
