@@ -12,6 +12,11 @@ repositories {
 
 dependencies {
     compile 'commons-collections:commons-collections:3.2'
+<<<<<<< HEAD
+=======
+    compile 'org.slf4j:jcl-over-slf4j:1.7.6'
+    compile 'org.antlr:antlr4:4.0'
+>>>>>>> FETCH_HEAD
     compile 'commons-beanutils:commons-beanutils:1.8.3'
     compile 'org.ow2.asm:asm:4.1'
     compile 'com.squareup:javapoet:1.0.0-SNAPSHOT'
