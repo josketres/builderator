@@ -1,5 +1,7 @@
 package com.josketres.builderator;
 
+import com.google.testing.compile.JavaFileObjects;
+import com.google.testing.compile.JavaSourceSubjectFactory;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -14,6 +16,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.concurrent.Callable;
 
+import static com.google.common.truth.Truth.assert_;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
@@ -30,6 +33,15 @@ public class BuilderatorTest {
         root.delete();
         root.mkdirs();
         root.deleteOnExit();
+    }
+
+    @Test
+    public void test_compiles_without_error() throws Exception {
+
+        assert_().about(JavaSourceSubjectFactory.javaSource())
+                .that(JavaFileObjects.forSourceString("NormalJavaBeanBuilder",
+                        Builderator.builderFor(NormalJavaBean.class)))
+                .compilesWithoutError();
     }
 
     @Test

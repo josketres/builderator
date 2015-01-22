@@ -1,18 +1,13 @@
 package com.josketres.builderator;
 
-import static org.junit.Assert.assertEquals;
+import org.junit.Test;
+import test.classes.Address;
+import test.classes.NormalJavaBean;
 
 import java.util.Date;
 import java.util.List;
 
-import com.josketres.builderator.MetadataExtractor;
-import com.josketres.builderator.model.Property;
-import com.josketres.builderator.model.TargetClass;
-
-import org.junit.Test;
-
-import test.classes.Address;
-import test.classes.NormalJavaBean;
+import static org.junit.Assert.assertEquals;
 
 
 public class MetadataExtractorTest {
@@ -34,22 +29,20 @@ public class MetadataExtractorTest {
         assertEquals(NormalJavaBean.class.getPackage().getName(), data.getPackageName());
 
         List<Property> properties = data.getProperties();
-        propertyIs(properties.get(0), Address.class, "address", "setAddress", false);
-        propertyIs(properties.get(1), int.class, "age", "setAge", false);
-        propertyIs(properties.get(2), Date.class, "date", "setDate", true);
-        propertyIs(properties.get(3), String.class, "name", "setName", false);
+        propertyIs(properties.get(0), Address.class, "address", "setAddress");
+        propertyIs(properties.get(1), int.class, "age", "setAge");
+        propertyIs(properties.get(2), Date.class, "date", "setDate");
+        propertyIs(properties.get(3), String.class, "name", "setName");
 
         assertEquals(4, properties.size());
     }
 
     private void propertyIs(Property property,
-            Class<?> clazz, String name, String setterName,
-            boolean shouldBeImported) {
+                            Class<?> clazz, String name, String setterName) {
 
         assertEquals(name, property.getName());
         assertEquals(clazz.getSimpleName(), property.getType());
         assertEquals(clazz.getName(), property.getQualifiedName());
         assertEquals(setterName, property.getSetterName());
-        assertEquals(shouldBeImported, property.isShouldBeImported());
     }
 }

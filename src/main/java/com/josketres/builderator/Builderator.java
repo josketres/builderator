@@ -1,7 +1,5 @@
 package com.josketres.builderator;
 
-import com.josketres.builderator.model.TargetClass;
-
 public class Builderator {
 
     /**

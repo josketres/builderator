@@ -1,12 +1,13 @@
-package com.josketres.builderator.model;
+package com.josketres.builderator;
 
-public class Property implements Comparable<Property> {
+class Property implements Comparable<Property> {
 
     private String type;
     private String name;
     private String setterName;
     private boolean shouldBeImported;
     private String qualifiedName;
+    private Class<?> typeClass;
 
     public int compareTo(Property o) {
         return getName().compareTo(o.getName());
@@ -52,4 +53,11 @@ public class Property implements Comparable<Property> {
         this.qualifiedName = qualifiedName;
     }
 
+    public void setTypeClass(Class<?> typeClass) {
+        this.typeClass = typeClass;
+    }
+
+    public Class<?> getTypeClass() {
+        return typeClass;
+    }
 }

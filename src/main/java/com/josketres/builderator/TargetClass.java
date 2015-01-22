@@ -1,10 +1,10 @@
-package com.josketres.builderator.model;
+package com.josketres.builderator;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class TargetClass {
+class TargetClass {
 
     private String name;
     private String qualifiedName;

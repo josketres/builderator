@@ -1,17 +1,10 @@
 package com.josketres.builderator;
 
+import org.objectweb.asm.*;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
-
-import com.josketres.builderator.model.ConstructorSignature;
-
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
 
 class ConstructorAnalyser {
 
@@ -48,19 +41,19 @@ class ConstructorAnalyser {
 
                 @Override
                 public MethodVisitor visitMethod(int access, String name,
-                        String desc, String signature, String[] exceptions) {
+                                                 String desc, String signature, String[] exceptions) {
                     if ("<init>".equals(name)) {
                         return new MethodVisitor(Opcodes.ASM4) {
 
                             public void visitLocalVariable(String name,
-                                    String desc, String signature, Label start,
-                                    Label end, int index) {
+                                                           String desc, String signature, Label start,
+                                                           Label end, int index) {
                                 if (!"this".equals(name)) {
                                     Class<?> argumentType = extractArgumentType(constructor, desc);
                                     ctrSignature.addArgument(desc, name, signature, argumentType);
                                 }
 
-                                
+
                                 System.out.println("index: " + index);
                                 System.out.println("name: " + name);
                                 System.out.println("signature: "
@@ -80,7 +73,9 @@ class ConstructorAnalyser {
                                     }
                                 }
                                 return argumentType;
-                            };
+                            }
+
+                            ;
                         };
                     }
                     return null;

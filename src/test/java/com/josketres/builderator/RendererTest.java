@@ -10,30 +10,25 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 
-
 public class RendererTest {
     private static final int COMPILER_SUCCESS_CODE = 0;
 
     @Test
     public void test() throws IOException {
-        MetadataExtractor generator = new MetadataExtractor(
-                NormalJavaBean.class);
+        MetadataExtractor generator = new MetadataExtractor(NormalJavaBean.class);
         String source = new Renderer().render(generator.getMetadata());
 
         File root = File.createTempFile("java", null);
         root.delete();
         root.mkdirs();
 
-        String packageDirs =
-                NormalJavaBean.class.getPackage().getName()
-                        .replace(".", System.getProperty("file.separator"));
+        String packageDirs = NormalJavaBean.class.getPackage().getName().replace(".", System.getProperty("file.separator"));
 
         File packageFolder = new File(root, packageDirs);
         packageFolder.mkdirs();
 
-        File sourceFile = new File(packageFolder, NormalJavaBean.class
-                .getName()
-                .replace(".", "/") + "Builder.java");
+        File sourceFile = new File(packageFolder,
+                NormalJavaBean.class.getName().replace(".", System.getProperty("file.separator")) + "Builder.java");
         sourceFile.getParentFile().mkdirs();
         FileWriter fileWriter = null;
         try {
@@ -46,8 +41,9 @@ public class RendererTest {
         }
 
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-        int result = compiler.run(null, System.out, System.err,
-                sourceFile.getPath());
+        int result = compiler.run(null, System.out, System.err, sourceFile.getPath());
         Assert.assertEquals(COMPILER_SUCCESS_CODE, result);
+
     }
+
 }

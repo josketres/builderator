@@ -1,7 +1,5 @@
 package com.josketres.builderator;
 
-import com.josketres.builderator.model.Property;
-import com.josketres.builderator.model.TargetClass;
 import org.apache.commons.beanutils.PropertyUtils;
 
 import java.beans.PropertyDescriptor;
@@ -44,35 +42,23 @@ class MetadataExtractor {
             String simpleName = type.getSimpleName();
             String writeMethod = getSetterName(descriptor);
             String typeQualifiedName = getTypeQualifiedName(type);
-            boolean shouldBeImported = shouldBeImported(type);
-            property = createProperty(simpleName, name, writeMethod,
-                    typeQualifiedName, shouldBeImported);
+            property = createProperty(type, simpleName, name, writeMethod,
+                    typeQualifiedName);
         }
         return property;
-    }
-
-    private boolean shouldBeImported(Class<?> type) {
-
-        if (type.getPackage() != null
-                && !type.getPackage().equals(targetClass.getPackage())
-                && !type.getPackage().equals(String.class.getPackage())) {
-            return true;
-        }
-        return false;
     }
 
     private String getTypeQualifiedName(Class<?> type) {
         return type.getName();
     }
 
-    public Property createProperty(String type, String name,
-                                   String setterName, String typeQualifiedName,
-                                   boolean shouldBeImported) {
+    public Property createProperty(Class<?> typeClass, String type, String name,
+                                   String setterName, String typeQualifiedName) {
         Property property = new Property();
+        property.setTypeClass(typeClass);
         property.setType(type);
         property.setName(name);
         property.setSetterName(setterName);
-        property.setShouldBeImported(shouldBeImported);
         property.setQualifiedName(typeQualifiedName);
         return property;
     }

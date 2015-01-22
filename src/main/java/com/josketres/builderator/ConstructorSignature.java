@@ -1,9 +1,9 @@
-package com.josketres.builderator.model;
+package com.josketres.builderator;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class ConstructorSignature {
+class ConstructorSignature {
 
     private final List<String> types;
     private final List<String> names;
@@ -18,7 +18,7 @@ public class ConstructorSignature {
     }
 
     public void addArgument(String type, String name, String generic,
-            Class<?> argumentType) {
+                            Class<?> argumentType) {
         types.add(type);
         names.add(name);
         generics.add(generic);
