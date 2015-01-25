@@ -1,135 +1,79 @@
 package com.josketres.builderator;
 
+import com.google.common.collect.Lists;
 import com.google.testing.compile.JavaFileObjects;
 import com.google.testing.compile.JavaSourceSubjectFactory;
-import org.junit.Assert;
-import org.junit.BeforeClass;
+import com.google.testing.compile.JavaSourcesSubjectFactory;
+import com.squareup.javapoet.JavaFile;
+import com.squareup.javapoet.MethodSpec;
+import com.squareup.javapoet.TypeSpec;
 import org.junit.Test;
 import test.classes.NormalJavaBean;
 
-import javax.tools.JavaCompiler;
-import javax.tools.ToolProvider;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.net.URL;
-import java.net.URLClassLoader;
+import javax.lang.model.element.Modifier;
+import javax.tools.JavaFileObject;
 import java.util.concurrent.Callable;
 
 import static com.google.common.truth.Truth.assert_;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertTrue;
 
 public class BuilderatorTest {
-    private static final int COMPILER_SUCCESS_CODE = 0;
-
-    private static File root;
-
-    private File packageFolder;
-
-    @BeforeClass
-    public static void setup() throws Exception {
-        root = File.createTempFile("java", ".tmp");
-        root.delete();
-        root.mkdirs();
-        root.deleteOnExit();
-    }
 
     @Test
-    public void test_compiles_without_error() throws Exception {
+    public void test_builder_compiles_without_error() throws Exception {
 
         assert_().about(JavaSourceSubjectFactory.javaSource())
-                .that(JavaFileObjects.forSourceString("NormalJavaBeanBuilder",
+                .that(JavaFileObjects.forSourceString("test.classes.NormalJavaBeanBuilder",
                         Builderator.builderFor(NormalJavaBean.class)))
                 .compilesWithoutError();
     }
 
     @Test
-    public void test() throws Exception {
-        File builder = createBuilder();
-        File builderTester = createBuilderTester();
-        assertCompilesWithoutErrors(builder, builderTester);
-        assertBuilderCanBeUsed();
+    public void test_builder_tester_compiles_without_error() throws Exception {
+
+        assert_().about(JavaSourcesSubjectFactory.javaSources())
+                .that(Lists.newArrayList(
+                        JavaFileObjects.forSourceString("test.classes.NormalJavaBeanBuilder",
+                                Builderator.builderFor(NormalJavaBean.class)),
+                        JavaFileObjects.forSourceString("test.classes.BuilderTester",
+                                createBuilderTesterSource())))
+                .compilesWithoutError();
     }
 
-    private void assertBuilderCanBeUsed() throws Exception {
+    @Test
+    public void test_compiles_and_can_be_used() throws Exception {
 
-        URLClassLoader classLoader = URLClassLoader
-                .newInstance(new URL[]{root.toURI().toURL()});
-        Class<?> cls = Class.forName(NormalJavaBean.class.getPackage()
-                .getName() + ".BuilderTester", true, classLoader);
-        @SuppressWarnings("unchecked")
-        Callable<NormalJavaBean> instance = (Callable<NormalJavaBean>) cls
-                .newInstance();
-        NormalJavaBean constructed = instance.call();
+        TestCompiler testCompiler = new TestCompiler();
+        JavaFileObject builderSource = JavaFileObjects.forSourceString("test.classes.NormalJavaBeanBuilder", Builderator.builderFor(NormalJavaBean.class));
+        boolean success = testCompiler.compile(builderSource);
+        assertTrue(success);
 
+        JavaFileObject builderTesterSource = JavaFileObjects.forSourceString("test.classes.BuilderTester", createBuilderTesterSource());
+        success = testCompiler.compile(builderSource, builderTesterSource);
+        assertTrue(success);
+
+        testCompiler.loadClass("test.classes.NormalJavaBeanBuilder");
+        Callable<NormalJavaBean> tester = (Callable<NormalJavaBean>) testCompiler.loadClass("test.classes.BuilderTester").newInstance();
+        NormalJavaBean constructed = tester.call();
         assertThat(constructed.getName(), is("builderTest"));
         assertThat(constructed.getAge(), is(18));
     }
 
-    private File createBuilder() throws IOException {
-        String source = Builderator.builderFor(NormalJavaBean.class);
-        return createFile(source, "NormalJavaBeanBuilder",
-                NormalJavaBean.class.getPackage().getName());
-    }
+    private String createBuilderTesterSource() throws Exception {
 
-    private File createBuilderTester() throws Exception {
+        TypeSpec.Builder builder = TypeSpec.classBuilder("BuilderTester")
+                .addModifiers(Modifier.PUBLIC)
+                .addMethod(MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC).build())
+                .addSuperinterface(Callable.class)
+                .addMethod(MethodSpec.methodBuilder("call")
+                        .addModifiers(Modifier.PUBLIC)
+                        .returns(NormalJavaBean.class)
+                        .addStatement("NormalJavaBeanBuilder builder = NormalJavaBeanBuilder.aNormalJavaBean()")
+                        .addStatement("return builder.name($S).age(18).date(new java.util.Date()).address(new Address()).build()", "builderTest")
+                        .build());
 
-        String source = "package "
-                + NormalJavaBean.class.getPackage().getName()
-                + ";"
-                +
-                " import java.util.Date;"
-                +
-                " public class BuilderTester implements java.util.concurrent.Callable<NormalJavaBean>  { "
-                +
-                " public BuilderTester(){ } "
-                +
-                "  @Override"
-                +
-                "  public NormalJavaBean call() { "
-                +
-                "    NormalJavaBeanBuilder builder = NormalJavaBeanBuilder.aNormalJavaBean();"
-                +
-                "    return builder.name(\"builderTest\")"
-                +
-                "      .age(18).date(new Date()).address(new Address()).build();"
-                +
-                "  } " +
-                "}";
-
-        return createFile(source, "BuilderTester", NormalJavaBean.class
-                .getPackage().getName());
-    }
-
-    private File createFile(String source, String name, String packageName)
-            throws IOException {
-        String packageDirs = packageName.replace(".",
-                System.getProperty("file.separator"));
-
-        packageFolder = new File(root, packageDirs);
-        packageFolder.mkdirs();
-
-        File sourceFile = new File(packageFolder, name + ".java");
-        sourceFile.getParentFile().mkdirs();
-        FileWriter fileWriter = null;
-        try {
-            fileWriter = new FileWriter(sourceFile);
-            fileWriter.append(source);
-        } finally {
-            if (fileWriter != null) {
-                fileWriter.close();
-            }
-        }
-        return sourceFile;
-    }
-
-    private void assertCompilesWithoutErrors(File builder,
-                                             File builderTester) throws Exception {
-
-        JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-        int result = compiler.run(null, System.out, System.err,
-                builder.getPath(), builderTester.getPath());
-        Assert.assertEquals(COMPILER_SUCCESS_CODE, result);
+        return JavaFile.builder("test.classes", builder.build()).build().toString();
     }
 }
