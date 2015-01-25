@@ -1,11 +1,14 @@
 package com.josketres.builderator;
 
-import org.junit.Assert;
 import org.junit.Test;
+
+import java.lang.reflect.Constructor;
+
+import static org.junit.Assert.assertEquals;
 
 public class ConstructorAnalyserTest {
 
-    class ConstructorWithOneParam {
+    static class ConstructorWithOneParam {
 
         private final String name;
 
@@ -17,9 +20,13 @@ public class ConstructorAnalyserTest {
     @Test
     public void test() throws Exception {
 
-        ConstructorSignature signature = new ConstructorAnalyser().getSignature(ConstructorWithOneParam.class.getConstructors()[0]);
-        Assert.assertEquals(signature.getNames().get(1), "name");
-        Assert.assertEquals(signature.getClassTypes().get(1), String.class);
+
+        Constructor<?>[] declaredConstructors = ConstructorWithOneParam.class.getDeclaredConstructors();
+        assertEquals(declaredConstructors.length, 1);
+
+        ConstructorSignature signature = new ConstructorAnalyser().getSignature(ConstructorWithOneParam.class);
+        assertEquals("name", signature.getNames().get(0));
+        assertEquals(String.class, signature.getClassTypes().get(0));
     }
 
 }
