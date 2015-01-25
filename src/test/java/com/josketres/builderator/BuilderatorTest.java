@@ -11,13 +11,11 @@ import org.junit.Test;
 import test.classes.NormalJavaBean;
 
 import javax.lang.model.element.Modifier;
-import javax.tools.JavaFileObject;
 import java.util.concurrent.Callable;
 
 import static com.google.common.truth.Truth.assert_;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertTrue;
 
 public class BuilderatorTest {
 
@@ -46,13 +44,9 @@ public class BuilderatorTest {
     public void test_compiles_and_can_be_used() throws Exception {
 
         TestCompiler testCompiler = new TestCompiler();
-        JavaFileObject builderSource = JavaFileObjects.forSourceString("test.classes.NormalJavaBeanBuilder", Builderator.builderFor(NormalJavaBean.class));
-        boolean success = testCompiler.compile(builderSource);
-        assertTrue(success);
-
-        JavaFileObject builderTesterSource = JavaFileObjects.forSourceString("test.classes.BuilderTester", createBuilderTesterSource());
-        success = testCompiler.compile(builderSource, builderTesterSource);
-        assertTrue(success);
+        testCompiler.compile(
+                JavaFileObjects.forSourceString("test.classes.NormalJavaBeanBuilder", Builderator.builderFor(NormalJavaBean.class)),
+                JavaFileObjects.forSourceString("test.classes.BuilderTester", createBuilderTesterSource()));
 
         testCompiler.loadClass("test.classes.NormalJavaBeanBuilder");
         Callable<NormalJavaBean> tester = (Callable<NormalJavaBean>) testCompiler.loadClass("test.classes.BuilderTester").newInstance();
