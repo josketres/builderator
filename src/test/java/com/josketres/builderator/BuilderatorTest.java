@@ -22,31 +22,47 @@ public class BuilderatorTest {
     @Test
     public void test_builder_compiles_without_error() throws Exception {
 
-        assert_().about(JavaSourceSubjectFactory.javaSource())
-                .that(JavaFileObjects.forSourceString("test.classes.NormalJavaBeanBuilder",
-                        Builderator.builderFor(NormalJavaBean.class)))
-                .compilesWithoutError();
+        test_builder_compiles_without_error(Builderator.builderFor(NormalJavaBean.class));
     }
 
     @Test
     public void test_builder_tester_compiles_without_error() throws Exception {
 
-        assert_().about(JavaSourcesSubjectFactory.javaSources())
-                .that(Lists.newArrayList(
-                        JavaFileObjects.forSourceString("test.classes.NormalJavaBeanBuilder",
-                                Builderator.builderFor(NormalJavaBean.class)),
-                        JavaFileObjects.forSourceString("test.classes.BuilderTester",
-                                createBuilderTesterSource())))
-                .compilesWithoutError();
+        test_builder_tester_compiles_without_error(Builderator.builderFor(NormalJavaBean.class));
     }
 
     @Test
     public void test_compiles_and_can_be_used() throws Exception {
 
+        test_compiles_and_can_be_used(Builderator.builderFor(NormalJavaBean.class));
+    }
+
+    static void test_builder_compiles_without_error(String normalJavaBeanBuilderSource) throws Exception {
+
+        assert_().about(JavaSourceSubjectFactory.javaSource())
+                 .that(JavaFileObjects.forSourceString("test.classes.NormalJavaBeanBuilder",
+                                                       normalJavaBeanBuilderSource))
+                 .compilesWithoutError();
+    }
+
+    static void test_builder_tester_compiles_without_error(String normalJavaBeanBuilderSource) throws Exception {
+
+        assert_().about(JavaSourcesSubjectFactory.javaSources())
+                 .that(Lists.newArrayList(
+                     JavaFileObjects.forSourceString("test.classes.NormalJavaBeanBuilder",
+                                                     normalJavaBeanBuilderSource),
+                     JavaFileObjects.forSourceString("test.classes.BuilderTester",
+                                                     createBuilderTesterSource())))
+                 .compilesWithoutError();
+    }
+
+    static void test_compiles_and_can_be_used(String normalJavaBeanBuilderSource) throws Exception {
+
         TestCompiler testCompiler = new TestCompiler();
         testCompiler.compile(
-                JavaFileObjects.forSourceString("test.classes.NormalJavaBeanBuilder", Builderator.builderFor(NormalJavaBean.class)),
-                JavaFileObjects.forSourceString("test.classes.BuilderTester", createBuilderTesterSource()));
+            JavaFileObjects.forSourceString("test.classes.NormalJavaBeanBuilder",
+                                            normalJavaBeanBuilderSource),
+            JavaFileObjects.forSourceString("test.classes.BuilderTester", createBuilderTesterSource()));
 
         testCompiler.loadClass("test.classes.NormalJavaBeanBuilder");
         Callable<NormalJavaBean> tester = (Callable<NormalJavaBean>) testCompiler.loadClass("test.classes.BuilderTester").newInstance();
@@ -55,7 +71,7 @@ public class BuilderatorTest {
         assertThat(constructed.getAge(), is(18));
     }
 
-    private String createBuilderTesterSource() throws Exception {
+    private static String createBuilderTesterSource() throws Exception {
 
         TypeSpec.Builder builder = TypeSpec.classBuilder("BuilderTester")
                 .addModifiers(Modifier.PUBLIC)
