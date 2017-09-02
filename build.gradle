@@ -14,7 +14,7 @@ dependencies {
     compile 'commons-collections:commons-collections:3.2'
     compile 'commons-beanutils:commons-beanutils:1.8.3'
     compile 'org.ow2.asm:asm:4.1'
-    compile 'com.squareup:javapoet:1.0.0-SNAPSHOT'
+    compile 'com.squareup:javapoet:1.0.0'
 
     testCompile 'junit:junit:4.12'
     testCompile 'org.hamcrest:hamcrest-core:1.3'
