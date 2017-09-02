@@ -14,6 +14,9 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
+import static java.lang.System.getProperty;
+import static org.junit.Assert.fail;
+
 public class TestCompiler {
 
     private final JavaCompiler compiler;
@@ -37,6 +40,17 @@ public class TestCompiler {
                 Arrays.asList(sources));
 
         return task.call();
+    }
+
+    public void assertCompilationSuccess() {
+        if (!diagnosticCollector.getDiagnostics().isEmpty()) {
+            String lineSeparator = getProperty("line.separator");
+            StringBuilder message = new StringBuilder("There was compilation failures :").append(lineSeparator);
+            for (Diagnostic<? extends JavaFileObject> d : this.diagnosticCollector.getDiagnostics()) {
+                message.append(d).append(lineSeparator);
+            }
+            fail(message.toString());
+        }
     }
 
     public Class<?> loadClass(String name) throws ClassNotFoundException {
