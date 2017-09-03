@@ -6,13 +6,14 @@ import javax.lang.model.element.Modifier;
 
 class Renderer {
 
-    public static final String BUILDER_SUFFIX = "Builder";
+    static final String BUILDER_SUFFIX = "Builder";
 
     public String render(final TargetClass target) {
 
-        ClassName builderType = ClassName.get(target.getPackageName(), target.getName() + BUILDER_SUFFIX);
+        String builderClassName = getBuilderClassName(target);
+        ClassName builderType = ClassName.get(target.getPackageName(), builderClassName);
 
-        TypeSpec.Builder builderBuilder = TypeSpec.classBuilder(target.getName() + BUILDER_SUFFIX)
+        TypeSpec.Builder builderBuilder = TypeSpec.classBuilder(builderClassName)
                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
                 .addMethod(MethodSpec.constructorBuilder().addModifiers(Modifier.PRIVATE).build())
                 .addMethod(MethodSpec.methodBuilder("a" + target.getName())
@@ -40,6 +41,10 @@ class Renderer {
         builderBuilder.addMethod(createBuildMethod(target));
 
         return JavaFile.builder(target.getPackageName(), builderBuilder.build()).build().toString();
+    }
+
+    String getBuilderClassName(TargetClass target) {
+        return target.getName() + BUILDER_SUFFIX;
     }
 
     private MethodSpec createBuildMethod(TargetClass target) {

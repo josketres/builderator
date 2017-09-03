@@ -12,6 +12,7 @@ import java.util.concurrent.Callable;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 public class BuilderatorTest {
     @Test
@@ -21,12 +22,15 @@ public class BuilderatorTest {
 
     static void test_builderFor(String normalJavaBeanBuilderSource) throws Exception {
 
+        String builderTesterSource = createBuilderTesterSource();
+        assertThat("normalJavaBeanBuilderSource is null", normalJavaBeanBuilderSource, is(notNullValue()));
+
         TestCompiler testCompiler = new TestCompiler();
         testCompiler.compile(
             JavaFileObjects.forSourceString("test.classes.NormalJavaBeanBuilder",
                                             normalJavaBeanBuilderSource),
             JavaFileObjects.forSourceString("test.classes.BuilderTester",
-                                            createBuilderTesterSource()));
+                                            builderTesterSource));
 
         testCompiler.assertCompilationSuccess();
         
