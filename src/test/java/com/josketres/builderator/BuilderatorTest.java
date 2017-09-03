@@ -8,17 +8,31 @@ import test.classes.NormalJavaBean;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.google.testing.compile.JavaFileObjects.forSourceString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class BuilderatorTest {
     @Test
     public void test_render() throws Exception {
-        final Map<Class<?>, String> sources = renderBuilderForNormalJavaBean();
-        BuilderatorFacadeTest.test_builderFor(sources.get(NormalJavaBean.class));
+        Map<Class<?>, String> sources = renderBuilderForNormalJavaBean();
+        testNormalJavaBeanBuilder(sources.get(NormalJavaBean.class));
+        testAddressBuilder(sources.get(Address.class));
+    }
 
-        TestCompiler testCompiler = new TestCompiler();
-        testCompiler.compile(forSourceString("test.classes.AddressBuilder", sources.get(Address.class)));
-        testCompiler.assertCompilationSuccess();
+    static void testNormalJavaBeanBuilder(String normalJavaBeanBuilderSource) throws Exception {
+        BuilderTester<NormalJavaBean> tester = new BuilderTester<NormalJavaBean>(NormalJavaBean.class,
+                                                                                 normalJavaBeanBuilderSource);
+        NormalJavaBean constructed = tester
+            .test(".name($S).age(18).date(new java.util.Date()).address(new Address())", "builderTest");
+        assertThat(constructed.getName(), is("builderTest"));
+        assertThat(constructed.getAge(), is(18));
+    }
+
+    private static void testAddressBuilder(String addressBuilderSource) throws Exception {
+        BuilderTester<Address> tester = new BuilderTester<Address>(Address.class, addressBuilderSource);
+        Address constructed = tester.test(".number(12).street($S)", "main street");
+        assertThat(constructed.getNumber(), is(12));
+        assertThat(constructed.getStreet(), is("main street"));
     }
 
     private Map<Class<?>, String> renderBuilderForNormalJavaBean() {
