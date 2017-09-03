@@ -1,59 +1,36 @@
 package com.josketres.builderator;
 
-import com.google.testing.compile.JavaFileObjects;
-import com.squareup.javapoet.JavaFile;
-import com.squareup.javapoet.MethodSpec;
-import com.squareup.javapoet.TypeSpec;
+import com.josketres.builderator.Builderator.SourceWriter;
 import org.junit.Test;
+import test.classes.Address;
 import test.classes.NormalJavaBean;
 
-import javax.lang.model.element.Modifier;
-import java.util.concurrent.Callable;
+import java.util.HashMap;
+import java.util.Map;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
+import static com.google.testing.compile.JavaFileObjects.forSourceString;
 
 public class BuilderatorTest {
     @Test
-    public void test_builderFor() throws Exception {
-        test_builderFor(Builderator.builderFor(NormalJavaBean.class));
-    }
-
-    static void test_builderFor(String normalJavaBeanBuilderSource) throws Exception {
-
-        String builderTesterSource = createBuilderTesterSource();
-        assertThat("normalJavaBeanBuilderSource is null", normalJavaBeanBuilderSource, is(notNullValue()));
+    public void test_render() throws Exception {
+        final Map<Class<?>, String> sources = renderBuilderForNormalJavaBean();
+        BuilderatorFacadeTest.test_builderFor(sources.get(NormalJavaBean.class));
 
         TestCompiler testCompiler = new TestCompiler();
-        testCompiler.compile(
-            JavaFileObjects.forSourceString("test.classes.NormalJavaBeanBuilder",
-                                            normalJavaBeanBuilderSource),
-            JavaFileObjects.forSourceString("test.classes.BuilderTester",
-                                            builderTesterSource));
-
+        testCompiler.compile(forSourceString("test.classes.AddressBuilder", sources.get(Address.class)));
         testCompiler.assertCompilationSuccess();
-        
-        testCompiler.loadClass("test.classes.NormalJavaBeanBuilder");
-        Callable<NormalJavaBean> tester = (Callable<NormalJavaBean>) testCompiler.loadClass("test.classes.BuilderTester").newInstance();
-        NormalJavaBean constructed = tester.call();
-        assertThat(constructed.getName(), is("builderTest"));
-        assertThat(constructed.getAge(), is(18));
     }
 
-    private static String createBuilderTesterSource() throws Exception {
+    private Map<Class<?>, String> renderBuilderForNormalJavaBean() {
+        final Map<Class<?>, String> sources = new HashMap<Class<?>, String>();
+        SourceWriter sourceWriter = new SourceWriter() {
+            @Override public void writeSource(Class<?> targetClass, String builderClassQualifiedName,
+                                              String builderSource) {
+                sources.put(targetClass, builderSource);
+            }
+        };
 
-        TypeSpec.Builder builder = TypeSpec.classBuilder("BuilderTester")
-                .addModifiers(Modifier.PUBLIC)
-                .addMethod(MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC).build())
-                .addSuperinterface(Callable.class)
-                .addMethod(MethodSpec.methodBuilder("call")
-                        .addModifiers(Modifier.PUBLIC)
-                        .returns(NormalJavaBean.class)
-                        .addStatement("NormalJavaBeanBuilder builder = NormalJavaBeanBuilder.aNormalJavaBean()")
-                        .addStatement("return builder.name($S).age(18).date(new java.util.Date()).address(new Address()).build()", "builderTest")
-                        .build());
-
-        return JavaFile.builder("test.classes", builder.build()).build().toString();
+        new Builderator().targetClass(NormalJavaBean.class, Address.class).render(sourceWriter);
+        return sources;
     }
 }
