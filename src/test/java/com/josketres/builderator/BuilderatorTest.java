@@ -13,13 +13,18 @@ import static org.hamcrest.Matchers.is;
 
 public class BuilderatorTest {
     @Test
-    public void test_render() throws Exception {
-        Map<Class<?>, String> sources = renderBuilderForNormalJavaBean();
-        testNormalJavaBeanBuilder(sources.get(NormalJavaBean.class));
-        testAddressBuilder(sources.get(Address.class));
+    public void render_singleClass() throws Exception {
+        renderNormalJavaBeanBuilder(renderBuildersFor(NormalJavaBean.class).get(NormalJavaBean.class));
     }
 
-    static void testNormalJavaBeanBuilder(String normalJavaBeanBuilderSource) throws Exception {
+    @Test
+    public void render_twoClasses() throws Exception {
+        Map<Class<?>, String> sources = renderBuildersFor(NormalJavaBean.class, Address.class);
+        renderNormalJavaBeanBuilder(sources.get(NormalJavaBean.class));
+        renderAddressBuilder(sources.get(Address.class));
+    }
+
+    static void renderNormalJavaBeanBuilder(String normalJavaBeanBuilderSource) throws Exception {
         BuilderTester<NormalJavaBean> tester = new BuilderTester<NormalJavaBean>(NormalJavaBean.class,
                                                                                  normalJavaBeanBuilderSource);
         NormalJavaBean constructed = tester
@@ -28,14 +33,14 @@ public class BuilderatorTest {
         assertThat(constructed.getAge(), is(18));
     }
 
-    private static void testAddressBuilder(String addressBuilderSource) throws Exception {
+    private static void renderAddressBuilder(String addressBuilderSource) throws Exception {
         BuilderTester<Address> tester = new BuilderTester<Address>(Address.class, addressBuilderSource);
         Address constructed = tester.test(".number(12).street($S)", "main street");
         assertThat(constructed.getNumber(), is(12));
         assertThat(constructed.getStreet(), is("main street"));
     }
 
-    private Map<Class<?>, String> renderBuilderForNormalJavaBean() {
+    private Map<Class<?>, String> renderBuildersFor(Class<?>... targetClasses) {
         final Map<Class<?>, String> sources = new HashMap<Class<?>, String>();
         SourceWriter sourceWriter = new SourceWriter() {
             @Override public void writeSource(Class<?> targetClass, String builderClassQualifiedName,
@@ -44,7 +49,7 @@ public class BuilderatorTest {
             }
         };
 
-        new Builderator().targetClass(NormalJavaBean.class, Address.class).render(sourceWriter);
+        new Builderator().targetClass(targetClasses).render(sourceWriter);
         return sources;
     }
 }
