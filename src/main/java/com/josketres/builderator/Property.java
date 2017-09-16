@@ -60,4 +60,15 @@ class Property implements Comparable<Property> {
     public Class<?> getTypeClass() {
         return typeClass;
     }
+
+    @Override public String toString() {
+        return "Property{" +
+               "type='" + type + '\'' +
+               ", name='" + name + '\'' +
+               ", setterName='" + setterName + '\'' +
+               ", shouldBeImported=" + shouldBeImported +
+               ", qualifiedName='" + qualifiedName + '\'' +
+               ", typeClass=" + typeClass +
+               '}';
+    }
 }
