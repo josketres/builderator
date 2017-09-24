@@ -18,6 +18,11 @@ public class BuilderatorTest {
     }
 
     @Test
+    public void render_singleClass_withNonObjectParent() throws Exception {
+        renderIntermediateClassBuilder(softly, renderBuildersFor(IntermediateClass.class).get(IntermediateClass.class));
+    }
+
+    @Test
     public void render_twoClasses() throws Exception {
         Map<Class<?>, String> sources = renderBuildersFor(NormalJavaBean.class, Address.class);
         renderNormalJavaBeanBuilder(softly, sources.get(NormalJavaBean.class));
@@ -105,6 +110,15 @@ public class BuilderatorTest {
                                       clazz, Arrays.toString(expectedDeclaredSetters),
                                       actualDeclaredSetters)
               .containsExactly(expectedDeclaredSetters);
+    }
+
+    static void renderIntermediateClassBuilder(JUnitSoftAssertions softly, String intermediateClassBuilderSource)
+        throws Exception {
+        BuilderTester<IntermediateClass> tester = new BuilderTester<IntermediateClass>(IntermediateClass.class,
+                                                                                       intermediateClassBuilderSource);
+
+        IntermediateClass constructed = tester.test(".name(\"name2\")");
+        softly.assertThat(constructed.getName()).as("name").isEqualTo("name2");
     }
 
     static void renderNormalJavaBeanBuilder(JUnitSoftAssertions softly, String normalJavaBeanBuilderSource)

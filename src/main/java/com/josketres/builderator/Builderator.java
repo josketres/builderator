@@ -48,20 +48,32 @@ public class Builderator {
     }
 
     private List<Class<?>> sortByHierarchy(Set<Class<?>> targetClasses) {
-        Set<String> existingClasses = new HashSet<String>();
-        existingClasses.add(Object.class.getName());
+        Set<Class<?>> existingClasses = new HashSet<Class<?>>();
+
+        Map<Class<?>, Set<Class<?>>> allSuperClasses = new HashMap<Class<?>, Set<Class<?>>>();
+        for (Class<?> targetClass : targetClasses) {
+            Set<Class<?>> superClasses = new HashSet<Class<?>>();
+            for (String superClassName : getMetadata(targetClass).getSuperClasses()) {
+                Class<?> superClass = Utils.loadClass(superClassName);
+                if (!targetClasses.contains(superClass)) {
+                    existingClasses.add(superClass);
+                } else {
+                    superClasses.add(superClass);
+                }
+            }
+            allSuperClasses.put(targetClass, superClasses);
+        }
 
         List<Class<?>> sortedList = new ArrayList<Class<?>>();
         while (sortedList.size() != targetClasses.size()) {
             for (Class<?> targetClass : targetClasses) {
-                if (!existingClasses.contains(targetClass.getName())) {
-                    List<String> missingSuperClasses = new ArrayList<String>(
-                        getMetadata(targetClass).getSuperClasses());
+                if (!existingClasses.contains(targetClass)) {
+                    Set<Class<?>> missingSuperClasses = new HashSet<Class<?>>(allSuperClasses.get(targetClass));
                     missingSuperClasses.removeAll(existingClasses);
 
                     if (missingSuperClasses.isEmpty()) {
                         sortedList.add(targetClass);
-                        existingClasses.add(targetClass.getName());
+                        existingClasses.add(targetClass);
                         break;
                     }
                 }
