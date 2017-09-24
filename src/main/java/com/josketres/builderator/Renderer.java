@@ -36,9 +36,9 @@ class Renderer {
         TypeVariableName typeVariableS = get("S", get(format("%s<T,S>", builderClassName)));
         ParameterizedTypeName myselfType = get(get(Class.class), typeVariableS);
 
-        TypeSpec.Builder builderBuilder = TypeSpec.classBuilder(builderClassName);
+        TypeSpec.Builder builderBuilder = TypeSpec.classBuilder(builderClassName).addModifiers(PUBLIC);
 
-        MethodSpec.Builder constructorBuilder = constructorBuilder();
+        MethodSpec.Builder constructorBuilder = constructorBuilder().addModifiers(PROTECTED);
         if (parentBuilderClass == null) {
             if (concreteClass) {
                 // examples : NormalJavaBeanBuilder, AddressBuilder (see test classes)
@@ -55,13 +55,13 @@ class Renderer {
         } else {
             if (concreteClass) {
                 // example : ConcreteClassBuilder (see test classes)
-                builderBuilder.superclass(get(format("%s<%s,%s>", simpleName(parentBuilderClass), target.getName(),
+                builderBuilder.superclass(get(format("%s<%s,%s>", parentBuilderClass, target.getName(),
                                                      simpleName(builderClassName))));
 
                 constructorBuilder.addStatement("super($L.class)", builderClassName);
             } else {
                 // example : IntermediateClassBuilder (see test classes)
-                builderBuilder.superclass(get(format("%s<T,S>", simpleName(parentBuilderClass))));
+                builderBuilder.superclass(get(format("%s<T,S>", parentBuilderClass)));
 
                 ParameterSpec constructorParameter = builder(myselfType, SELF_TYPE).build();
                 constructorBuilder.addParameter(constructorParameter);
@@ -77,7 +77,7 @@ class Renderer {
             builderBuilder.addModifiers(PUBLIC);
 
             builderBuilder.addMethod(methodBuilder(getFactoryMethod(target))
-                                         .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+                                         .addModifiers(PUBLIC, Modifier.STATIC)
                                          .returns(builderType)
                                          .addStatement("return new $T()", builderType)
                                          .build());
