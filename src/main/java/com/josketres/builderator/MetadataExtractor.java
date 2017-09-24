@@ -1,8 +1,12 @@
 package com.josketres.builderator;
 
-import org.apache.commons.beanutils.PropertyUtils;
-
 import java.beans.PropertyDescriptor;
+import java.util.ArrayList;
+import java.util.List;
+
+import static com.josketres.builderator.Utils.loadClass;
+import static java.util.Arrays.asList;
+import static org.apache.commons.beanutils.PropertyUtils.getPropertyDescriptors;
 
 class MetadataExtractor {
     private TargetClass data;
@@ -17,13 +21,30 @@ class MetadataExtractor {
         data.setName(targetClass.getSimpleName());
         data.setQualifiedName(targetClass.getName());
         data.setPackageName(targetClass.getPackage().getName());
+        addSuperClasses();
         addProperties();
         return data;
     }
 
+    private void addSuperClasses() {
+        List<String> superClasses = new ArrayList<String>();
+        Class<?> currentClass = targetClass;
+        while (true) {
+            currentClass = currentClass.getSuperclass();
+            if (currentClass == null) {
+                break;
+            }
+
+            superClasses.add(currentClass.getName());
+        }
+        data.setSuperClasses(superClasses);
+    }
+
     private void addProperties() {
-        PropertyDescriptor[] desc = PropertyUtils
-                .getPropertyDescriptors(targetClass);
+        List<PropertyDescriptor> desc = new ArrayList<PropertyDescriptor>(asList(getPropertyDescriptors(targetClass)));
+        for (String superClass : data.getSuperClasses()) {
+            desc.removeAll(asList(getPropertyDescriptors(loadClass(superClass))));
+        }
         for (PropertyDescriptor descriptor : desc) {
             Property property = extractPropertyMetadata(descriptor);
             if (property != null) {

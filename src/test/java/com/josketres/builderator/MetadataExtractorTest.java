@@ -3,13 +3,16 @@ package com.josketres.builderator;
 import org.assertj.core.api.JUnitSoftAssertions;
 import org.junit.Rule;
 import org.junit.Test;
-import test.classes.Address;
-import test.classes.NormalJavaBean;
+import org.junit.experimental.theories.Theories;
+import org.junit.experimental.theories.Theory;
+import org.junit.runner.RunWith;
+import test.classes.*;
 
 import java.util.Date;
 import java.util.List;
 
 
+@RunWith(Theories.class)
 public class MetadataExtractorTest {
     @Rule public JUnitSoftAssertions softly = new JUnitSoftAssertions();
 
@@ -21,6 +24,18 @@ public class MetadataExtractorTest {
         softly.assertThat(data.getName()).isEqualTo(NormalJavaBean.class.getSimpleName());
         softly.assertThat(data.getQualifiedName()).isEqualTo(NormalJavaBean.class.getName());
         softly.assertThat(data.getPackageName()).isEqualTo(NormalJavaBean.class.getPackage().getName());
+        softly.assertThat(data.getSuperClasses()).containsExactly(Object.class.getName());
+    }
+
+    @Test
+    public void shouldGenerateMetadataOfTargetClassWithSuperClasses() {
+        TargetClass intermediateClass = new MetadataExtractor(IntermediateClass.class).getMetadata();
+        TargetClass concreteClass = new MetadataExtractor(ConcreteClass.class).getMetadata();
+
+        softly.assertThat(intermediateClass.getSuperClasses()).containsExactly(
+            BaseClass.class.getName(), Object.class.getName());
+        softly.assertThat(concreteClass.getSuperClasses()).containsExactly(
+            IntermediateClass.class.getName(), BaseClass.class.getName(), Object.class.getName());
     }
 
     @Test
@@ -36,6 +51,22 @@ public class MetadataExtractorTest {
             property(Date.class, "date", "setDate", false),
             property(String.class, "name", "setName", false)
         );
+    }
+
+    @Theory
+    public void shouldGeneratePropertiesMetadataWithOnlyDeclaredFields(boolean concreteClass) throws Exception {
+        MetadataExtractor gen = new MetadataExtractor(concreteClass ? ConcreteClass.class : IntermediateClass.class);
+        TargetClass data = gen.getMetadata();
+
+        List<Property> properties = data.getProperties();
+
+        if (concreteClass) {
+            softly.assertThat(properties).usingFieldByFieldElementComparator().containsExactly(
+                property(long.class, "value", "setValue", false));
+        } else {
+            softly.assertThat(properties).usingFieldByFieldElementComparator().containsExactly(
+                property(String.class, "name", "setName", false));
+        }
     }
 
     private static Property property(Class<?> clazz, String name, String setterName, boolean shouldBeImported) {

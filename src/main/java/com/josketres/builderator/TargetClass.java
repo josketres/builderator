@@ -10,6 +10,7 @@ class TargetClass {
     private String qualifiedName;
     private String packageName;
     private List<Property> properties;
+    private List<String> superClasses;
 
     public TargetClass() {
         this.properties = new ArrayList<Property>();
@@ -48,4 +49,11 @@ class TargetClass {
         this.packageName = packageName;
     }
 
+    public List<String> getSuperClasses() {
+        return superClasses;
+    }
+
+    public void setSuperClasses(List<String> superClasses) {
+        this.superClasses = superClasses;
+    }
 }

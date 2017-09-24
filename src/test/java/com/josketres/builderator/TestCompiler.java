@@ -22,6 +22,8 @@ public class TestCompiler {
     private final JavaCompiler compiler;
     private final DiagnosticCollector<JavaFileObject> diagnosticCollector;
     private final MemoryFileManager fileManager;
+    private final Map<String, Class<?>> classNameToClass = new HashMap<String, Class<?>>();
+    private ClassLoader classLoader;
 
     public TestCompiler() {
         compiler = ToolProvider.getSystemJavaCompiler();
@@ -54,7 +56,15 @@ public class TestCompiler {
     }
 
     public Class<?> loadClass(String name) throws ClassNotFoundException {
-        return fileManager.getClassLoader(null).loadClass(name);
+        Class<?> clazz = classNameToClass.get(name);
+        if (clazz == null) {
+            if (classLoader == null) {
+                classLoader = fileManager.getClassLoader(null);
+            }
+            clazz = classLoader.loadClass(name);
+            classNameToClass.put(name, clazz);
+        }
+        return clazz;
     }
 }
 
