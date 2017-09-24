@@ -5,9 +5,13 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
+import static com.josketres.builderator.Renderer.getBuilderClassName;
+import static java.util.Arrays.asList;
+
 /**
  * A builder class handling more complex cases than {@link BuilderatorFacade}.
  */
+@SuppressWarnings("WeakerAccess")
 public class Builderator {
     private static final Logger LOGGER = LoggerFactory.getLogger(Builderator.class);
 
@@ -15,18 +19,19 @@ public class Builderator {
     private final Map<Class<?>, TargetClass> metadataCache = new HashMap<Class<?>, TargetClass>();
 
     public Builderator targetClass(Class<?>... targetClasses) {
-        for (Class<?> targetClass : targetClasses) {
-            this.targetClasses.add(targetClass);
-        }
+        this.targetClasses.addAll(asList(targetClasses));
         return this;
     }
 
     public void render(SourceWriter sourceWriter) {
         Renderer renderer = new Renderer();
         Map<String, String> targetClassToBuilderClass = new HashMap<String, String>();
-        for (Class<?> targetClass : sortByHierarchy(targetClasses)) {
+        Set<Class<?>> externalClasses = new HashSet<Class<?>>();
+        Map<Class<?>, Set<Class<?>>> allSuperClasses = initExternalClasses(targetClasses, externalClasses);
+
+        for (Class<?> targetClass : sortByHierarchy(targetClasses, externalClasses, allSuperClasses)) {
             TargetClass metadata = getMetadata(targetClass);
-            String builderClassName = metadata.getPackageName() + '.' + renderer.getBuilderClassName(metadata);
+            String builderClassName = metadata.getPackageName() + '.' + getBuilderClassName(metadata);
 
             targetClassToBuilderClass.put(metadata.getQualifiedName(), builderClassName);
             String parentBuilderClass = null;
@@ -47,9 +52,30 @@ public class Builderator {
         return true;
     }
 
-    private List<Class<?>> sortByHierarchy(Set<Class<?>> targetClasses) {
-        Set<Class<?>> existingClasses = new HashSet<Class<?>>();
+    private List<Class<?>> sortByHierarchy(Set<Class<?>> targetClasses, Set<Class<?>> externalClasses,
+                                           Map<Class<?>, Set<Class<?>>> allSuperClasses) {
+        List<Class<?>> sortedList = new ArrayList<Class<?>>();
+        while (sortedList.size() != targetClasses.size()) {
+            for (Class<?> targetClass : targetClasses) {
+                if (!externalClasses.contains(targetClass)) {
+                    Set<Class<?>> missingSuperClasses = new HashSet<Class<?>>(allSuperClasses.get(targetClass));
+                    missingSuperClasses.removeAll(externalClasses);
 
+                    if (missingSuperClasses.isEmpty()) {
+                        sortedList.add(targetClass);
+                        externalClasses.add(targetClass);
+                        break;
+                    }
+                }
+            }
+        }
+
+        LOGGER.info("Builders will be generated in following order : {}", sortedList);
+        return sortedList;
+    }
+
+    private Map<Class<?>, Set<Class<?>>> initExternalClasses(Set<Class<?>> targetClasses,
+                                                             Set<Class<?>> existingClasses) {
         Map<Class<?>, Set<Class<?>>> allSuperClasses = new HashMap<Class<?>, Set<Class<?>>>();
         for (Class<?> targetClass : targetClasses) {
             Set<Class<?>> superClasses = new HashSet<Class<?>>();
@@ -63,25 +89,7 @@ public class Builderator {
             }
             allSuperClasses.put(targetClass, superClasses);
         }
-
-        List<Class<?>> sortedList = new ArrayList<Class<?>>();
-        while (sortedList.size() != targetClasses.size()) {
-            for (Class<?> targetClass : targetClasses) {
-                if (!existingClasses.contains(targetClass)) {
-                    Set<Class<?>> missingSuperClasses = new HashSet<Class<?>>(allSuperClasses.get(targetClass));
-                    missingSuperClasses.removeAll(existingClasses);
-
-                    if (missingSuperClasses.isEmpty()) {
-                        sortedList.add(targetClass);
-                        existingClasses.add(targetClass);
-                        break;
-                    }
-                }
-            }
-        }
-
-        LOGGER.info("Builders will be generated in following order : {}", sortedList);
-        return sortedList;
+        return allSuperClasses;
     }
 
     private TargetClass getMetadata(Class<?> targetClass) {
