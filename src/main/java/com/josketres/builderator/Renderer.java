@@ -1,16 +1,18 @@
 package com.josketres.builderator;
 
 import com.squareup.javapoet.*;
+import com.squareup.javapoet.MethodSpec.Builder;
 
-import javax.lang.model.element.Modifier;
 import java.util.HashSet;
 import java.util.Set;
 
 import static com.squareup.javapoet.ClassName.get;
+import static com.squareup.javapoet.JavaFile.builder;
 import static com.squareup.javapoet.MethodSpec.constructorBuilder;
 import static com.squareup.javapoet.MethodSpec.methodBuilder;
 import static com.squareup.javapoet.ParameterSpec.builder;
 import static com.squareup.javapoet.ParameterizedTypeName.get;
+import static com.squareup.javapoet.TypeSpec.classBuilder;
 import static com.squareup.javapoet.TypeVariableName.get;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -27,18 +29,56 @@ class Renderer {
     private static final String SELF_TYPE = "selfType";
 
     public String render(final TargetClass target, String parentBuilderClass, boolean concreteClass) {
-        ClassName targetType = get(target.getPackageName(), target.getName());
         String builderClassName = getBuilderClassName(target);
         ClassName builderType = get(target.getPackageName(), builderClassName);
 
-        // Generates something like "BaseClassBuilder<T, S extends BaseClassBuilder<T, S>>"
-        TypeVariableName typeVariableT = get("T", targetType);
+        TypeVariableName typeVariableT = get("T", get(target.getPackageName(), target.getName()));
         TypeVariableName typeVariableS = get("S", get(format("%s<T,S>", builderClassName)));
+
+        TypeSpec.Builder builderBuilder = classBuilder(builderClassName).addModifiers(PUBLIC);
+
+        addConstructor(builderBuilder, target, parentBuilderClass, concreteClass, builderClassName, typeVariableS);
+        builderBuilder.addMethod(
+            createInitMethod(target, get(target.getPackageName(), target.getName()), (parentBuilderClass != null)));
+        if (concreteClass) {
+            builderBuilder.addMethod(createFactoryMethod(target, builderType));
+            builderBuilder.addMethod(createBuildMethod(get(target.getPackageName(), target.getName())));
+        } else {
+            builderBuilder.addTypeVariable(typeVariableT).addTypeVariable(typeVariableS);
+        }
+
+        for (Property property : target.getProperties()) {
+            builderBuilder.addField(
+                FieldSpec.builder(property.getTypeClass(), property.getName()).addModifiers(PRIVATE).build());
+            builderBuilder.addMethod(createSetter(concreteClass, builderType, typeVariableS, property));
+        }
+
+        return builder(target.getPackageName(), builderBuilder.build()).build().toString();
+    }
+
+    private MethodSpec createSetter(boolean concreteClass, ClassName builderType, TypeVariableName typeVariableS,
+                                    Property property) {
+        return methodBuilder(property.getName())
+            .addModifiers(PUBLIC)
+            .addParameter(property.getTypeClass(), property.getName())
+            .returns(concreteClass ? builderType : typeVariableS)
+            .addStatement("this.$N = $N", property.getName(), property.getName())
+            .addStatement("return $N", concreteClass ? "this" : MYSELF)
+            .build();
+    }
+
+    private MethodSpec createFactoryMethod(TargetClass target, ClassName builderType) {
+        return methodBuilder(getFactoryMethod(target))
+            .addModifiers(PUBLIC, STATIC)
+            .returns(builderType)
+            .addStatement("return new $T()", builderType)
+            .build();
+    }
+
+    private void addConstructor(TypeSpec.Builder builderBuilder, TargetClass target, String parentBuilderClass,
+                                boolean concreteClass, String builderClassName, TypeVariableName typeVariableS) {
+        Builder constructorBuilder = constructorBuilder().addModifiers(PROTECTED);
         ParameterizedTypeName myselfType = get(get(Class.class), typeVariableS);
-
-        TypeSpec.Builder builderBuilder = TypeSpec.classBuilder(builderClassName).addModifiers(PUBLIC);
-
-        MethodSpec.Builder constructorBuilder = constructorBuilder().addModifiers(PROTECTED);
         if (parentBuilderClass == null) {
             if (concreteClass) {
                 // examples : NormalJavaBeanBuilder, AddressBuilder (see test classes)
@@ -69,42 +109,7 @@ class Renderer {
                 constructorBuilder.addStatement("super($N)", SELF_TYPE);
             }
         }
-
         builderBuilder.addMethod(constructorBuilder.build());
-
-        builderBuilder.addMethod(createInitMethod(target, get(target.getPackageName(), target.getName()), (parentBuilderClass != null)));
-        if (concreteClass) {
-            builderBuilder.addModifiers(PUBLIC);
-
-            builderBuilder.addMethod(methodBuilder(getFactoryMethod(target))
-                                         .addModifiers(PUBLIC, Modifier.STATIC)
-                                         .returns(builderType)
-                                         .addStatement("return new $T()", builderType)
-                                         .build());
-            builderBuilder.addMethod(createBuildMethod(target, get(target.getPackageName(), target.getName())));
-        } else {
-            // no Modifier => package private
-            builderBuilder.addTypeVariable(typeVariableT).addTypeVariable(typeVariableS);
-        }
-
-        for (Property property : target.getProperties()) {
-            builderBuilder.addField(FieldSpec.builder(
-                    property.getTypeClass(),
-                    property.getName())
-                    .addModifiers(Modifier.PRIVATE)
-                    .build());
-            MethodSpec setter = methodBuilder(property.getName())
-                    .addModifiers(PUBLIC)
-                    .addParameter(property.getTypeClass(), property.getName())
-                    .returns(concreteClass ? builderType : typeVariableS)
-                    .addStatement("this.$N = $N", property.getName(), property.getName())
-                    .addStatement("return $N", concreteClass ? "this" : MYSELF)
-                    .build();
-            builderBuilder.addMethod(setter);
-        }
-
-        String s = JavaFile.builder(target.getPackageName(), builderBuilder.build()).build().toString();
-        return s;
     }
 
     static String getFactoryMethod(TargetClass target) {
@@ -115,12 +120,8 @@ class Renderer {
         return target.getName() + BUILDER_SUFFIX;
     }
 
-    private MethodSpec createBuildMethod(TargetClass target, TypeName objectType) {
-
-        MethodSpec.Builder method = methodBuilder(BUILD_METHOD)
-                .addModifiers(PUBLIC)
-                .returns(objectType);
-
+    private MethodSpec createBuildMethod(TypeName objectType) {
+        Builder method = methodBuilder(BUILD_METHOD).addModifiers(PUBLIC).returns(objectType);
         method.addStatement("$T $N = new $T()", objectType, "object", objectType);
         method.addStatement("$N($N)", INIT_METHOD, "object");
         method.addStatement("return object");
@@ -128,7 +129,7 @@ class Renderer {
     }
 
     private MethodSpec createInitMethod(TargetClass target, TypeName objectType, boolean parentBuilderClass) {
-        MethodSpec.Builder method = methodBuilder(INIT_METHOD)
+        Builder method = methodBuilder(INIT_METHOD)
             .addModifiers(PROTECTED)
             .addParameter(ParameterSpec.builder(objectType, "object").build());
         if (parentBuilderClass) {
@@ -141,7 +142,7 @@ class Renderer {
         return method.build();
     }
 
-    static String simpleName(String parentBuilderClassName) {
+    private static String simpleName(String parentBuilderClassName) {
         int beginIndex = parentBuilderClassName.lastIndexOf('.');
         if (beginIndex >= 0)  {
             parentBuilderClassName = parentBuilderClassName.substring(beginIndex + 1);
