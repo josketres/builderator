@@ -53,6 +53,10 @@ class Renderer {
             builderBuilder.addMethod(createSetter(concreteClass, builderType, typeVariableS, property));
         }
 
+        for (TargetClass.PropertyGroup property : target.getPropertyGroups()) {
+            builderBuilder.addMethod(createGroupSetter(concreteClass, builderType, typeVariableS, property, target));
+        }
+
         return builder(target.getPackageName(), builderBuilder.build()).build().toString();
     }
 
@@ -65,6 +69,28 @@ class Renderer {
             .addStatement("this.$N = $N", property.getName(), property.getName())
             .addStatement("return $N", concreteClass ? "this" : MYSELF)
             .build();
+    }
+
+    private MethodSpec createGroupSetter(boolean concreteClass, ClassName builderType, TypeVariableName typeVariableS,
+                                         TargetClass.PropertyGroup propertyGroup,
+                                         TargetClass target) {
+        Builder builder = methodBuilder(propertyGroup.getGroupName())
+            .addModifiers(PUBLIC)
+            .returns(concreteClass ? builderType : typeVariableS);
+        StringBuilder statement = new StringBuilder();
+        for (String setter : propertyGroup.getProperties()) {
+            for (Property property : target.getProperties()) {
+                if (property.getName().equals(setter)) {
+                    builder.addParameter(property.getTypeClass(), property.getName());
+                    if (statement.length() > 0) {
+                        statement.append('.');
+                    }
+                    statement.append(property.getName()).append('(').append(property.getName()).append(')');
+                    break;
+                }
+            }
+        }
+        return builder.addStatement("return " + statement.toString()).build();
     }
 
     private MethodSpec createFactoryMethod(TargetClass target, ClassName builderType) {

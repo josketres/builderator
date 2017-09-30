@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 import static com.josketres.builderator.Renderer.getBuilderClassName;
-import static java.util.Arrays.asList;
 
 /**
  * A builder class handling more complex cases than {@link BuilderatorFacade}.
@@ -17,7 +16,6 @@ import static java.util.Arrays.asList;
 public class Builderator implements BuilderatorDSL {
     private static final Logger LOGGER = LoggerFactory.getLogger(Builderator.class);
 
-    private final Set<Class<?>> targetClasses = new HashSet<Class<?>>();
     private final Map<Class<?>, TargetClass> metadataCache = new HashMap<Class<?>, TargetClass>();
 
     public BuilderatorClassDSL targetClass(Class<?>... targetClasses) {
@@ -25,9 +23,25 @@ public class Builderator implements BuilderatorDSL {
     }
 
     private class BuilderatorClassDSLImpl implements BuilderatorClassDSL {
+        private Class<?>[] targetClasses;
+
         @Override
         public BuilderatorClassDSL targetClass(Class<?>... targetClasses) {
-            Builderator.this.targetClasses.addAll(asList(targetClasses));
+            this.targetClasses = targetClasses;
+
+            // fill the cache of metadata
+            for (Class<?> targetClass : this.targetClasses) {
+                getMetadata(targetClass);
+            }
+
+            return this;
+        }
+
+        @Override
+        public BuilderatorClassDSL groupSetters(String groupName, String... properties) {
+            for (Class<?> targetClass : this.targetClasses) {
+                getMetadata(targetClass).groupSetters(groupName, properties);
+            }
             return this;
         }
 
@@ -42,9 +56,9 @@ public class Builderator implements BuilderatorDSL {
         Renderer renderer = new Renderer();
         Map<String, String> targetClassToBuilderClass = new HashMap<String, String>();
         Set<Class<?>> externalClasses = new HashSet<Class<?>>();
-        Map<Class<?>, Set<Class<?>>> allSuperClasses = initExternalClasses(targetClasses, externalClasses);
+        Map<Class<?>, Set<Class<?>>> allSuperClasses = initExternalClasses(metadataCache.keySet(), externalClasses);
 
-        for (Class<?> targetClass : sortByHierarchy(targetClasses, externalClasses, allSuperClasses)) {
+        for (Class<?> targetClass : sortByHierarchy(metadataCache.keySet(), externalClasses, allSuperClasses)) {
             TargetClass metadata = getMetadata(targetClass);
             String builderClassName = metadata.getPackageName() + '.' + getBuilderClassName(metadata);
 
@@ -53,7 +67,8 @@ public class Builderator implements BuilderatorDSL {
             if (!metadata.getSuperClasses().isEmpty()) {
                 parentBuilderClass = targetClassToBuilderClass.get(metadata.getSuperClasses().get(0));
             }
-            String render = renderer.render(metadata, parentBuilderClass, isConcreteClass(targetClasses, targetClass));
+            String render = renderer
+                .render(metadata, parentBuilderClass, isConcreteClass(metadataCache.keySet(), targetClass));
             sourceWriter.writeSource(targetClass, builderClassName, render);
         }
     }

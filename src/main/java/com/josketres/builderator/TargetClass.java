@@ -1,10 +1,9 @@
 package com.josketres.builderator;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 class TargetClass {
+    private final Set<PropertyGroup> propertyGroups = new HashSet<PropertyGroup>();
 
     private String name;
     private String qualifiedName;
@@ -55,5 +54,44 @@ class TargetClass {
 
     public void setSuperClasses(List<String> superClasses) {
         this.superClasses = superClasses;
+    }
+
+    public void groupSetters(String groupName, String... properties) {
+        propertyGroups.add(new PropertyGroup(groupName, properties));
+    }
+
+    public Set<PropertyGroup> getPropertyGroups() {
+        return propertyGroups;
+    }
+
+    class PropertyGroup {
+        private final String groupName;
+        private final String[] properties;
+
+        private PropertyGroup(String groupName, String... properties) {
+            this.groupName = groupName;
+            this.properties = properties;
+        }
+
+        @Override public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            PropertyGroup that = (PropertyGroup) o;
+
+            return groupName != null ? groupName.equals(that.groupName) : that.groupName == null;
+        }
+
+        @Override public int hashCode() {
+            return groupName != null ? groupName.hashCode() : 0;
+        }
+
+        public String getGroupName() {
+            return groupName;
+        }
+
+        public String[] getProperties() {
+            return properties;
+        }
     }
 }

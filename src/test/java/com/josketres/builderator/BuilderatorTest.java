@@ -19,6 +19,26 @@ public class BuilderatorTest {
     @Rule public JUnitSoftAssertions softly = new JUnitSoftAssertions();
 
     @Test
+    public void render_groupSetters() throws Exception {
+        final Map<Class<?>, String> sources = new HashMap<Class<?>, String>();
+        SourceWriter sourceWriter = new SourceWriter() {
+            @Override
+            public void writeSource(Class<?> targetClass, String builderClassQualifiedName, String builderSource) {
+                sources.put(targetClass, builderSource);
+            }
+        };
+
+        new Builderator().targetClass(GroupSettersClass.class)
+                         .groupSetters("validityDates", "beginValidity", "endValidity")
+                         .render(sourceWriter);
+        BuilderTester<GroupSettersClass> tester = new BuilderTester<GroupSettersClass>(GroupSettersClass.class, sources
+            .get(GroupSettersClass.class));
+        GroupSettersClass constructed = tester.test(".validityDates(new java.util.Date(1), new java.util.Date(2))");
+        softly.assertThat(constructed.getBeginValidity()).isEqualTo(new Date(1));
+        softly.assertThat(constructed.getEndValidity()).isEqualTo(new Date(2));
+    }
+
+    @Test
     public void render_singleClass() throws Exception {
         renderNormalJavaBeanBuilder(softly, renderBuildersFor(NormalJavaBean.class).get(NormalJavaBean.class));
     }
