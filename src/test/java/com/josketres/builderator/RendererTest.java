@@ -87,7 +87,7 @@ public class RendererTest {
 
         softly.assertThat(source)
               .contains(format("public class %s%s", getBuilderClassName(targetClass), concreteClass ? ' ' : '<'))
-              .contains(format("protected %s(", getBuilderClassName(targetClass)));
+              .contains(format("%s %s(", concreteClass ? "public" : "protected", getBuilderClassName(targetClass)));
     }
 
     private int compile(TargetClass targetClass, String source) throws IOException {

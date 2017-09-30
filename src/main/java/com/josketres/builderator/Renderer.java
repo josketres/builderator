@@ -103,7 +103,7 @@ class Renderer {
 
     private void addConstructor(TypeSpec.Builder builderBuilder, TargetClass target, String parentBuilderClass,
                                 boolean concreteClass, String builderClassName, TypeVariableName typeVariableS) {
-        Builder constructorBuilder = constructorBuilder().addModifiers(PROTECTED);
+        Builder constructorBuilder = constructorBuilder().addModifiers(concreteClass ? PUBLIC : PROTECTED);
         ParameterizedTypeName myselfType = get(get(Class.class), typeVariableS);
         if (parentBuilderClass == null) {
             if (concreteClass) {
