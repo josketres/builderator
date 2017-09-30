@@ -1,5 +1,7 @@
 package com.josketres.builderator;
 
+import com.josketres.builderator.dsl.BuilderatorClassDSL;
+import com.josketres.builderator.dsl.BuilderatorDSL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,17 +14,30 @@ import static java.util.Arrays.asList;
  * A builder class handling more complex cases than {@link BuilderatorFacade}.
  */
 @SuppressWarnings("WeakerAccess")
-public class Builderator {
+public class Builderator implements BuilderatorDSL {
     private static final Logger LOGGER = LoggerFactory.getLogger(Builderator.class);
 
     private final Set<Class<?>> targetClasses = new HashSet<Class<?>>();
     private final Map<Class<?>, TargetClass> metadataCache = new HashMap<Class<?>, TargetClass>();
 
-    public Builderator targetClass(Class<?>... targetClasses) {
-        this.targetClasses.addAll(asList(targetClasses));
-        return this;
+    public BuilderatorClassDSL targetClass(Class<?>... targetClasses) {
+        return new BuilderatorClassDSLImpl().targetClass(targetClasses);
     }
 
+    private class BuilderatorClassDSLImpl implements BuilderatorClassDSL {
+        @Override
+        public BuilderatorClassDSL targetClass(Class<?>... targetClasses) {
+            Builderator.this.targetClasses.addAll(asList(targetClasses));
+            return this;
+        }
+
+        @Override
+        public void render(SourceWriter sourceWriter) {
+            Builderator.this.render(sourceWriter);
+        }
+    }
+
+    @Override
     public void render(SourceWriter sourceWriter) {
         Renderer renderer = new Renderer();
         Map<String, String> targetClassToBuilderClass = new HashMap<String, String>();

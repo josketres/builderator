@@ -4,11 +4,17 @@ import com.josketres.builderator.Builderator.SourceWriter;
 import org.assertj.core.api.JUnitSoftAssertions;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.theories.Theories;
+import org.junit.experimental.theories.Theory;
+import org.junit.runner.RunWith;
 import test.classes.*;
 
 import java.lang.reflect.Method;
 import java.util.*;
 
+import static java.lang.System.arraycopy;
+
+@RunWith(Theories.class)
 public class BuilderatorTest {
     @Rule public JUnitSoftAssertions softly = new JUnitSoftAssertions();
 
@@ -22,30 +28,34 @@ public class BuilderatorTest {
         renderIntermediateClassBuilder(softly, renderBuildersFor(IntermediateClass.class).get(IntermediateClass.class));
     }
 
-    @Test
-    public void render_twoClasses() throws Exception {
-        Map<Class<?>, String> sources = renderBuildersFor(NormalJavaBean.class, Address.class);
+    @Theory
+    public void render_twoClasses(boolean splitTargetClasses) throws Exception {
+        Map<Class<?>, String> sources = renderBuildersFor(splitTargetClasses, NormalJavaBean.class, Address.class);
         renderNormalJavaBeanBuilder(softly, sources.get(NormalJavaBean.class));
         renderAddressBuilder(sources.get(Address.class));
     }
 
-    @Test
-    public void render_threeClasses_withInheritance_inReverseOrder() throws Exception {
-        render_threeClasses_withInheritance(ConcreteClass.class, IntermediateClass.class, BaseClass.class);
+    @Theory
+    public void render_threeClasses_withInheritance_inReverseOrder(boolean splitTargetClasses) throws Exception {
+        render_threeClasses_withInheritance(splitTargetClasses, ConcreteClass.class, IntermediateClass.class,
+                                            BaseClass.class);
     }
 
-    @Test
-    public void render_threeClasses_withInheritance_inOrder() throws Exception {
-        render_threeClasses_withInheritance(BaseClass.class, IntermediateClass.class, ConcreteClass.class);
+    @Theory
+    public void render_threeClasses_withInheritance_inOrder(boolean splitTargetClasses) throws Exception {
+        render_threeClasses_withInheritance(splitTargetClasses, BaseClass.class, IntermediateClass.class,
+                                            ConcreteClass.class);
     }
 
-    @Test
-    public void render_threeClasses_withInheritance_disordered() throws Exception {
-        render_threeClasses_withInheritance(IntermediateClass.class, ConcreteClass.class, BaseClass.class);
+    @Theory
+    public void render_threeClasses_withInheritance_disordered(boolean splitTargetClasses) throws Exception {
+        render_threeClasses_withInheritance(splitTargetClasses, IntermediateClass.class, ConcreteClass.class,
+                                            BaseClass.class);
     }
 
-    public void render_threeClasses_withInheritance(Class<?>... targetClasses) throws Exception {
-        Map<Class<?>, String> sources = renderBuildersFor(targetClasses);
+    public void render_threeClasses_withInheritance(boolean splitTargetClasses, Class<?>... targetClasses)
+        throws Exception {
+        Map<Class<?>, String> sources = renderBuildersFor(splitTargetClasses, targetClasses);
         BuilderTester<ConcreteClass> testerConcreteClass = renderConcreteClassBuilder(sources);
 
         Class<?> baseClassBuilder = testerConcreteClass.loadBuilderClass(BaseClass.class);
@@ -94,7 +104,7 @@ public class BuilderatorTest {
         Set<String> actualDeclaredSetters = new TreeSet<String>();
         for (Method method : clazz.getDeclaredMethods()) {
             if (!Renderer.RESERVED_METHODS.contains(method.getName()) && !tester.getFactoryMethod()
-                                                                          .equals(method.getName())) {
+                                                                                .equals(method.getName())) {
                 actualDeclaredSetters.add(method.getName());
             }
         }
@@ -153,6 +163,10 @@ public class BuilderatorTest {
     }
 
     private Map<Class<?>, String> renderBuildersFor(Class<?>... targetClasses) {
+        return renderBuildersFor(false, targetClasses);
+    }
+
+    private Map<Class<?>, String> renderBuildersFor(boolean splitTargetClasses, Class<?>... targetClasses) {
         final Map<Class<?>, String> sources = new HashMap<Class<?>, String>();
         SourceWriter sourceWriter = new SourceWriter() {
             @Override public void writeSource(Class<?> targetClass, String builderClassQualifiedName,
@@ -161,7 +175,14 @@ public class BuilderatorTest {
             }
         };
 
-        new Builderator().targetClass(targetClasses).render(sourceWriter);
+        Builderator builderator = new Builderator();
+        if (splitTargetClasses && (targetClasses.length > 1)) {
+            Class<?>[] moreClasses = new Class<?>[targetClasses.length - 1];
+            arraycopy(targetClasses, 1, moreClasses, 0, targetClasses.length - 1);
+            builderator.targetClass(targetClasses[0]).targetClass(moreClasses).render(sourceWriter);
+        } else {
+            builderator.targetClass(targetClasses).render(sourceWriter);
+        }
         return sources;
     }
 }
