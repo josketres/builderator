@@ -6,6 +6,7 @@ import com.squareup.javapoet.MethodSpec.Builder;
 import java.util.HashSet;
 import java.util.Set;
 
+import static com.josketres.builderator.Utils.simpleName;
 import static com.squareup.javapoet.ClassName.get;
 import static com.squareup.javapoet.JavaFile.builder;
 import static com.squareup.javapoet.MethodSpec.constructorBuilder;
@@ -166,13 +167,5 @@ class Renderer {
             method.addStatement("$N.$N($N)", "object", property.getSetterName(), property.getName());
         }
         return method.build();
-    }
-
-    private static String simpleName(String parentBuilderClassName) {
-        int beginIndex = parentBuilderClassName.lastIndexOf('.');
-        if (beginIndex >= 0)  {
-            parentBuilderClassName = parentBuilderClassName.substring(beginIndex + 1);
-        }
-        return parentBuilderClassName;
     }
 }

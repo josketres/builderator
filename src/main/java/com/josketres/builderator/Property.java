@@ -1,13 +1,24 @@
 package com.josketres.builderator;
 
+import com.google.common.reflect.TypeToken;
+
+import java.lang.reflect.Type;
+
 class Property implements Comparable<Property> {
 
-    private String type;
+    private final String type;
+    private final String qualifiedName;
+
     private String name;
     private String setterName;
     private boolean shouldBeImported;
-    private String qualifiedName;
-    private Class<?> typeClass;
+    private TypeToken<?> typeClass;
+
+    public Property(TypeToken<?> typeToken) {
+        this.typeClass = typeToken;
+        this.type = Utils.simpleName(typeToken.toString());
+        this.qualifiedName = typeToken.toString();
+    }
 
     public int compareTo(Property o) {
         return getName().compareTo(o.getName());
@@ -15,10 +26,6 @@ class Property implements Comparable<Property> {
 
     public String getType() {
         return type;
-    }
-
-    public void setType(String type) {
-        this.type = type;
     }
 
     public String getName() {
@@ -49,16 +56,8 @@ class Property implements Comparable<Property> {
         return qualifiedName;
     }
 
-    public void setQualifiedName(String qualifiedName) {
-        this.qualifiedName = qualifiedName;
-    }
-
-    public void setTypeClass(Class<?> typeClass) {
-        this.typeClass = typeClass;
-    }
-
-    public Class<?> getTypeClass() {
-        return typeClass;
+    public Type getTypeClass() {
+        return typeClass.getType();
     }
 
     @Override public String toString() {

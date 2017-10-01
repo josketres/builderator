@@ -18,6 +18,7 @@ dependencies {
     compile 'org.ow2.asm:asm:4.1'
     compile 'com.squareup:javapoet:1.0.0'
     compile 'org.slf4j:slf4j-api:1.6.1'
+    compile 'com.google.guava:guava:20.0'
 
     testCompile 'junit:junit:4.12'
     testCompile 'org.hamcrest:hamcrest-core:1.3'

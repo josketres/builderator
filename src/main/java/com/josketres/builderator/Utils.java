@@ -11,4 +11,14 @@ public class Utils {
             throw new RuntimeException(e);
         }
     }
+
+    public static String simpleName(String qualifiedClassName) {
+        int lowerOrEqualIndex = qualifiedClassName.indexOf('<');
+        int lastDotIndex = qualifiedClassName
+            .lastIndexOf('.', (lowerOrEqualIndex >= 0) ? lowerOrEqualIndex : qualifiedClassName.length());
+        if (lastDotIndex >= 0) {
+            qualifiedClassName = qualifiedClassName.substring(lastDotIndex + 1);
+        }
+        return qualifiedClassName;
+    }
 }

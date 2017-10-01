@@ -1,9 +1,13 @@
 package com.josketres.builderator;
 
+import com.google.common.reflect.TypeToken;
+
 import java.beans.PropertyDescriptor;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.google.common.reflect.TypeToken.of;
 import static com.josketres.builderator.Utils.loadClass;
 import static java.util.Arrays.asList;
 import static org.apache.commons.beanutils.PropertyUtils.getPropertyDescriptors;
@@ -58,35 +62,31 @@ class MetadataExtractor {
         if (descriptor != null
                 && !descriptor.getPropertyType().equals(Class.class)
                 && descriptor.getWriteMethod() != null) {
-            Class<?> type = descriptor.getPropertyType();
             String name = descriptor.getName();
-            String simpleName = type.getSimpleName();
             String writeMethod = getSetterName(descriptor);
-            String typeQualifiedName = getTypeQualifiedName(type);
-            property = createProperty(type, simpleName, name, writeMethod,
-                    typeQualifiedName);
+            property = createProperty(getSetterParameterType(descriptor), name, writeMethod);
         }
         return property;
     }
 
-    private String getTypeQualifiedName(Class<?> type) {
-        return type.getName();
-    }
-
-    public Property createProperty(Class<?> typeClass, String type, String name,
-                                   String setterName, String typeQualifiedName) {
-        Property property = new Property();
-        property.setTypeClass(typeClass);
-        property.setType(type);
+    private Property createProperty(TypeToken<?> typeToken, String name, String setterName) {
+        Property property = new Property(typeToken);
         property.setName(name);
         property.setSetterName(setterName);
-        property.setQualifiedName(typeQualifiedName);
         return property;
     }
 
     private String getSetterName(PropertyDescriptor descriptor) {
         if (descriptor.getWriteMethod() != null) {
             return descriptor.getWriteMethod().getName();
+        }
+        return null;
+    }
+
+    private TypeToken<?> getSetterParameterType(PropertyDescriptor descriptor) {
+        if (descriptor.getWriteMethod() != null) {
+            Type[] parameterTypes = descriptor.getWriteMethod().getGenericParameterTypes();
+            return of(parameterTypes[0]);
         }
         return null;
     }

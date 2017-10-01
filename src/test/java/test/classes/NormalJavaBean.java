@@ -1,12 +1,14 @@
 package test.classes;
 
 import java.util.Date;
+import java.util.List;
 
 public class NormalJavaBean {
     private String name;
     private int age;
     private Date date;
     private Address address;
+    private List<String> petNames;
 
     public NormalJavaBean() {
         super();
@@ -46,5 +48,13 @@ public class NormalJavaBean {
     
     public String getSuperName() {
         return "super" + getName();
+    }
+
+    public List<String> getPetNames() {
+        return petNames;
+    }
+
+    public void setPetNames(List<String> petNames) {
+        this.petNames = petNames;
     }
 }

@@ -1,5 +1,6 @@
 package com.josketres.builderator;
 
+import com.google.common.reflect.TypeToken;
 import org.assertj.core.api.JUnitSoftAssertions;
 import org.junit.Rule;
 import org.junit.Test;
@@ -11,6 +12,7 @@ import test.classes.*;
 import java.util.Date;
 import java.util.List;
 
+import static com.google.common.reflect.TypeToken.of;
 
 @RunWith(Theories.class)
 public class MetadataExtractorTest {
@@ -49,7 +51,9 @@ public class MetadataExtractorTest {
             property(Address.class, "address", "setAddress", false),
             property(int.class, "age", "setAge", false),
             property(Date.class, "date", "setDate", false),
-            property(String.class, "name", "setName", false)
+            property(String.class, "name", "setName", false),
+            property(new TypeToken<List<String>>() {
+            }, "petNames", "setPetNames", false)
         );
     }
 
@@ -70,13 +74,14 @@ public class MetadataExtractorTest {
     }
 
     private static Property property(Class<?> clazz, String name, String setterName, boolean shouldBeImported) {
-        Property property = new Property();
+        return property(of(clazz), name, setterName, shouldBeImported);
+    }
+
+    private static Property property(TypeToken<?> typeToken, String name, String setterName, boolean shouldBeImported) {
+        Property property = new Property(typeToken);
         property.setName(name);
-        property.setType(clazz.getSimpleName());
-        property.setQualifiedName(clazz.getName());
         property.setSetterName(setterName);
         property.setShouldBeImported(shouldBeImported);
-        property.setTypeClass(clazz);
         return property;
     }
 }
