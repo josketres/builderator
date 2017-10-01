@@ -6,6 +6,7 @@ import com.squareup.javapoet.MethodSpec.Builder;
 import java.util.HashSet;
 import java.util.Set;
 
+import static com.josketres.builderator.Utils.loadClass;
 import static com.josketres.builderator.Utils.simpleName;
 import static com.squareup.javapoet.ClassName.get;
 import static com.squareup.javapoet.JavaFile.builder;
@@ -16,6 +17,7 @@ import static com.squareup.javapoet.ParameterizedTypeName.get;
 import static com.squareup.javapoet.TypeSpec.classBuilder;
 import static com.squareup.javapoet.TypeVariableName.get;
 import static java.lang.String.format;
+import static java.lang.reflect.Modifier.isAbstract;
 import static java.util.Arrays.asList;
 import static javax.lang.model.element.Modifier.*;
 
@@ -30,6 +32,11 @@ class Renderer {
     private static final String SELF_TYPE = "selfType";
 
     public String render(final TargetClass target, String parentBuilderClass, boolean concreteClass) {
+        boolean abstractModifier = isAbstract(loadClass(target.getQualifiedName()).getModifiers());
+        if (abstractModifier) {
+            concreteClass = false;
+        }
+
         String builderClassName = getBuilderClassName(target);
         ClassName builderType = get(target.getPackageName(), builderClassName);
 
@@ -37,6 +44,9 @@ class Renderer {
         TypeVariableName typeVariableS = get("S", get(format("%s<T,S>", builderClassName)));
 
         TypeSpec.Builder builderBuilder = classBuilder(builderClassName).addModifiers(PUBLIC);
+        if (abstractModifier) {
+            builderBuilder.addModifiers(ABSTRACT);
+        }
 
         addConstructor(builderBuilder, target, parentBuilderClass, concreteClass, builderClassName, typeVariableS);
         builderBuilder.addMethod(

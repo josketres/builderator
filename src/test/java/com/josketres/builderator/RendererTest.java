@@ -3,11 +3,11 @@ package com.josketres.builderator;
 import com.google.common.io.Files;
 import org.assertj.core.api.JUnitSoftAssertions;
 import org.junit.Rule;
-import org.junit.Test;
 import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
+import test.classes.AbstractClass;
 import test.classes.NormalJavaBean;
 import test.classes.ParentBuilderClass;
 import test.classes.pkg.ParentBuilderClassOtherPackage;
@@ -20,6 +20,7 @@ import java.io.IOException;
 import static com.josketres.builderator.Renderer.BUILD_METHOD;
 import static com.josketres.builderator.Renderer.getBuilderClassName;
 import static java.lang.String.format;
+import static java.lang.reflect.Modifier.isAbstract;
 
 @RunWith(Theories.class)
 public class RendererTest {
@@ -31,44 +32,50 @@ public class RendererTest {
     @Rule public JUnitSoftAssertions softly = new JUnitSoftAssertions();
 
     @Theory
-    public void test_withParentClass_abstractClass(boolean otherPackage) throws IOException {
-        test(true, otherPackage, false);
+    public void test_withParentClass_abstractClass(boolean otherPackage, boolean abstractModifier) throws IOException {
+        test(true, otherPackage, false, abstractModifier);
     }
 
     @Theory
-    public void test_withParentClass_concreteClass(boolean otherPackage) throws IOException {
-        test(true, otherPackage, true);
+    public void test_withParentClass_concreteClass(boolean otherPackage, boolean abstractModifier) throws IOException {
+        test(true, otherPackage, true, abstractModifier);
     }
 
-    @Test
-    public void test_withoutParentClass_abstractClass() throws IOException {
-        test(false, false, false);
+    @Theory
+    public void test_withoutParentClass_abstractClass(boolean abstractModifier) throws IOException {
+        test(false, false, false, abstractModifier);
     }
 
-    @Test
-    public void test_withoutParentClass_concreteClass() throws IOException {
-        test(false, false, true);
+    @Theory
+    public void test_withoutParentClass_concreteClass(boolean abstractModifier) throws IOException {
+        test(false, false, true, abstractModifier);
     }
 
-    private void test(boolean withParentBuilderClass, boolean otherPackage, boolean concreteClass) throws IOException {
+    private void test(boolean withParentBuilderClass, boolean otherPackage, boolean concreteClass,
+                      boolean abstractModifier) throws IOException {
         // prepare
-        MetadataExtractor metadataExtractor = new MetadataExtractor(NormalJavaBean.class);
+        Class<?> targetClass = abstractModifier ? AbstractClass.class : NormalJavaBean.class;
+        if (isAbstract(targetClass.getModifiers())) {
+            concreteClass = false;
+        }
+
+        MetadataExtractor metadataExtractor = new MetadataExtractor(targetClass);
 
         String parentBuilderClassName = null;
         String parentBuilderClassIfAny = otherPackage ? PARENT_BUILDER_CLASS_OTHER_PACKAGE : PARENT_BUILDER_CLASS;
         if (withParentBuilderClass) {
             parentBuilderClassName = parentBuilderClassIfAny;
         }
-        TargetClass targetClass = metadataExtractor.getMetadata();
+        TargetClass metadata = metadataExtractor.getMetadata();
 
         // test
-        String source = new Renderer().render(targetClass, parentBuilderClassName, concreteClass);
+        String source = new Renderer().render(metadata, parentBuilderClassName, concreteClass);
 
         // verify
-        softly.assertThat(compile(targetClass, source)).isEqualTo(COMPILER_SUCCESS_CODE);
+        softly.assertThat(compile(metadata, source)).isEqualTo(COMPILER_SUCCESS_CODE);
 
         String buildMethod = BUILD_METHOD + "()";
-        String factoryMethod = Renderer.getFactoryMethod(targetClass) + "()";
+        String factoryMethod = Renderer.getFactoryMethod(metadata) + "()";
         String extendsParentClause = " extends " + parentBuilderClassIfAny;
 
         if (parentBuilderClassName == null) {
@@ -86,9 +93,14 @@ public class RendererTest {
         }
 
         softly.assertThat(source)
-              .contains(format("public class %s%s", getBuilderClassName(targetClass), concreteClass ? ' ' : '<'))
-              .contains(format("%s %s(", concreteClass ? "public" : "protected", getBuilderClassName(targetClass)))
-              .contains("List<String> petNames;").contains("petNames(List<String> petNames)");
+              .contains(
+                  format("public %sclass %s%s", abstractModifier ? "abstract " : "", getBuilderClassName(metadata),
+                         concreteClass ? ' ' : '<'))
+              .contains(format("%s %s(", concreteClass ? "public" : "protected", getBuilderClassName(metadata)));
+
+        if (!abstractModifier) {
+            softly.assertThat(source).contains("List<String> petNames;").contains("petNames(List<String> petNames)");
+        }
     }
 
     private int compile(TargetClass targetClass, String source) throws IOException {
