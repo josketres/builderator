@@ -13,6 +13,7 @@ class Property implements Comparable<Property> {
     private String setterName;
     private boolean shouldBeImported;
     private TypeToken<?> typeClass;
+    private String defaultValue;
 
     public Property(TypeToken<?> typeToken) {
         this.typeClass = typeToken;
@@ -60,6 +61,14 @@ class Property implements Comparable<Property> {
         return typeClass.getType();
     }
 
+    public String getDefaultValue() {
+        return defaultValue;
+    }
+
+    public void setDefaultValue(String defaultValue) {
+        this.defaultValue = defaultValue;
+    }
+
     @Override public String toString() {
         return "Property{" +
                "type='" + type + '\'' +
@@ -68,6 +77,7 @@ class Property implements Comparable<Property> {
                ", shouldBeImported=" + shouldBeImported +
                ", qualifiedName='" + qualifiedName + '\'' +
                ", typeClass=" + typeClass +
+               ", defaultValue=" + defaultValue +
                '}';
     }
 }

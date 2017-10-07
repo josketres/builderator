@@ -59,8 +59,7 @@ class Renderer {
         }
 
         for (Property property : target.getProperties()) {
-            builderBuilder.addField(
-                FieldSpec.builder(property.getTypeClass(), property.getName()).addModifiers(PRIVATE).build());
+            builderBuilder.addField(createField(property));
             builderBuilder.addMethod(createSetter(concreteClass, builderType, typeVariableS, property));
         }
 
@@ -69,6 +68,15 @@ class Renderer {
         }
 
         return builder(target.getPackageName(), builderBuilder.build()).build().toString();
+    }
+
+    private FieldSpec createField(Property property) {
+        FieldSpec.Builder builder = FieldSpec.builder(property.getTypeClass(), property.getName())
+                                             .addModifiers(PRIVATE);
+        if (property.getDefaultValue() != null) {
+            builder.initializer("$L", property.getDefaultValue());
+        }
+        return builder.build();
     }
 
     private MethodSpec createSetter(boolean concreteClass, ClassName builderType, TypeVariableName typeVariableS,

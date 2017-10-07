@@ -45,6 +45,13 @@ public class Builderator implements BuilderatorDSL {
             return this;
         }
 
+        @Override public BuilderatorClassDSL defaultValue(String property, String valueStatement) {
+            for (Class<?> targetClass : this.targetClasses) {
+                getMetadata(targetClass).defaultValue(property, valueStatement);
+            }
+            return this;
+        }
+
         @Override
         public void render(SourceWriter sourceWriter) {
             Builderator.this.render(sourceWriter);

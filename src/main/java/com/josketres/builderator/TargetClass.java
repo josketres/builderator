@@ -60,6 +60,15 @@ class TargetClass {
         propertyGroups.add(new PropertyGroup(groupName, properties));
     }
 
+    public void defaultValue(String propertyName, String valueStatement) {
+        for (Property property : properties) {
+            if (property.getName().equals(propertyName)) {
+                property.setDefaultValue(valueStatement);
+                break;
+            }
+        }
+    }
+
     public Set<PropertyGroup> getPropertyGroups() {
         return propertyGroups;
     }

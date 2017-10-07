@@ -20,22 +20,33 @@ public class BuilderatorTest {
 
     @Test
     public void render_groupSetters() throws Exception {
-        final Map<Class<?>, String> sources = new HashMap<Class<?>, String>();
-        SourceWriter sourceWriter = new SourceWriter() {
-            @Override
-            public void writeSource(Class<?> targetClass, String builderClassQualifiedName, String builderSource) {
-                sources.put(targetClass, builderSource);
-            }
-        };
+        SingleSourceWriter sourceWriter = new SingleSourceWriter();
 
         new Builderator().targetClass(GroupSettersClass.class)
                          .groupSetters("validityDates", "beginValidity", "endValidity")
                          .render(sourceWriter);
-        BuilderTester<GroupSettersClass> tester = new BuilderTester<GroupSettersClass>(GroupSettersClass.class, sources
-            .get(GroupSettersClass.class));
+
+        BuilderTester<GroupSettersClass> tester = new BuilderTester<GroupSettersClass>(GroupSettersClass.class,
+                                                                                       sourceWriter.getSource());
         GroupSettersClass constructed = tester.test(".validityDates(new java.util.Date(1), new java.util.Date(2))");
         softly.assertThat(constructed.getBeginValidity()).isEqualTo(new Date(1));
         softly.assertThat(constructed.getEndValidity()).isEqualTo(new Date(2));
+    }
+
+    @Test
+    public void render_defaultValue() throws Exception {
+        SingleSourceWriter sourceWriter = new SingleSourceWriter();
+        Date defaultValue = new Date(456);
+
+        new Builderator().targetClass(GroupSettersClass.class)
+                         .defaultValue("beginValidity", "new Date(456)")
+                         .render(sourceWriter);
+
+        BuilderTester<GroupSettersClass> tester = new BuilderTester<GroupSettersClass>(GroupSettersClass.class,
+                                                                                       sourceWriter.getSource());
+        GroupSettersClass constructed = tester.test(null);
+        softly.assertThat(constructed.getBeginValidity()).isEqualTo(defaultValue);
+        softly.assertThat(constructed.getEndValidity()).isNull();
     }
 
     @Test
