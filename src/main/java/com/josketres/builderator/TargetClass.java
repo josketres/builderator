@@ -2,6 +2,8 @@ package com.josketres.builderator;
 
 import java.util.*;
 
+import static java.util.Arrays.asList;
+
 class TargetClass {
     private final Set<PropertyGroup> propertyGroups = new HashSet<PropertyGroup>();
 
@@ -99,8 +101,17 @@ class TargetClass {
             return groupName;
         }
 
-        public String[] getProperties() {
-            return properties;
+        public Iterable<Property> getProperties() {
+            Property[] result = new Property[properties.length];
+            for (int i = 0; i < result.length; i++) {
+                for (Property property : TargetClass.this.getProperties()) {
+                    if (property.getName().equals(properties[i])) {
+                        result[i] = property;
+                        break;
+                    }
+                }
+            }
+            return asList(result);
         }
     }
 }
