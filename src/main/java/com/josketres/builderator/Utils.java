@@ -4,9 +4,9 @@ public class Utils {
     private Utils() {
     }
 
-    public static Class<?> loadClass(String superClass) {
+    public static Class<?> loadClass(String className) {
         try {
-            return Class.forName(superClass);
+            return Class.forName(className);
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }

@@ -69,7 +69,7 @@ public class RendererTest {
         TargetClass metadata = metadataExtractor.getMetadata();
 
         // test
-        String source = new Renderer().render(metadata, parentBuilderClassName, concreteClass);
+        String source = new Renderer(Converters.getInstance()).render(metadata, parentBuilderClassName, concreteClass);
 
         // verify
         softly.assertThat(compile(metadata, source)).isEqualTo(COMPILER_SUCCESS_CODE);

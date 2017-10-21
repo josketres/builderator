@@ -4,7 +4,7 @@ import com.google.common.reflect.TypeToken;
 
 import java.lang.reflect.Type;
 
-class Property implements Comparable<Property> {
+class Property implements Comparable<Property>, IProperty {
 
     private final String type;
     private final String qualifiedName;
@@ -29,6 +29,7 @@ class Property implements Comparable<Property> {
         return type;
     }
 
+    @Override
     public String getName() {
         return name;
     }
@@ -57,6 +58,7 @@ class Property implements Comparable<Property> {
         return qualifiedName;
     }
 
+    @Override
     public Type getTypeClass() {
         return typeClass.getType();
     }

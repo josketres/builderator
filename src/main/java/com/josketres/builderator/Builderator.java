@@ -1,5 +1,6 @@
 package com.josketres.builderator;
 
+import com.josketres.builderator.Converters.Converter;
 import com.josketres.builderator.dsl.BuilderatorClassDSL;
 import com.josketres.builderator.dsl.BuilderatorDSL;
 import org.slf4j.Logger;
@@ -17,6 +18,7 @@ public class Builderator implements BuilderatorDSL {
     private static final Logger LOGGER = LoggerFactory.getLogger(Builderator.class);
 
     private final Map<Class<?>, TargetClass> metadataCache = new HashMap<Class<?>, TargetClass>();
+    private final Converters converters = Converters.getInstance();
 
     public BuilderatorClassDSL targetClass(Class<?>... targetClasses) {
         return new BuilderatorClassDSLImpl().targetClass(targetClasses);
@@ -52,15 +54,26 @@ public class Builderator implements BuilderatorDSL {
             return this;
         }
 
+        @Override public BuilderatorClassDSL converter(Converter<?, ?>... converters) {
+            Builderator.this.converter(converters);
+            return this;
+        }
+
         @Override
         public void render(SourceWriter sourceWriter) {
             Builderator.this.render(sourceWriter);
         }
     }
 
+    private void converter(Converter<?, ?>... converters) {
+        for (Converter<?, ?> converter : converters) {
+            this.converters.registerConverter(converter);
+        }
+    }
+
     @Override
     public void render(SourceWriter sourceWriter) {
-        Renderer renderer = new Renderer();
+        Renderer renderer = new Renderer(converters);
         Map<String, String> targetClassToBuilderClass = new HashMap<String, String>();
         Set<Class<?>> externalClasses = new HashSet<Class<?>>();
         Map<Class<?>, Set<Class<?>>> allSuperClasses = initExternalClasses(metadataCache.keySet(), externalClasses);

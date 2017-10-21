@@ -3,12 +3,19 @@ package com.josketres.builderator;
 import com.squareup.javapoet.*;
 import com.squareup.javapoet.MethodSpec.Builder;
 
+import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
+import static com.google.common.collect.Iterables.addAll;
+import static com.google.common.collect.Iterables.get;
+import static com.google.common.collect.Lists.cartesianProduct;
 import static com.josketres.builderator.Utils.loadClass;
 import static com.josketres.builderator.Utils.simpleName;
 import static com.squareup.javapoet.ClassName.get;
+import static com.squareup.javapoet.CodeBlock.builder;
 import static com.squareup.javapoet.JavaFile.builder;
 import static com.squareup.javapoet.MethodSpec.constructorBuilder;
 import static com.squareup.javapoet.MethodSpec.methodBuilder;
@@ -19,6 +26,7 @@ import static com.squareup.javapoet.TypeVariableName.get;
 import static java.lang.String.format;
 import static java.lang.reflect.Modifier.isAbstract;
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptySet;
 import static javax.lang.model.element.Modifier.*;
 
 class Renderer {
@@ -30,6 +38,12 @@ class Renderer {
 
     private static final String MYSELF = "myself";
     private static final String SELF_TYPE = "selfType";
+
+    private final Converters converters;
+
+    Renderer(Converters converters) {
+        this.converters = converters;
+    }
 
     public String render(final TargetClass target, String parentBuilderClass, boolean concreteClass) {
         boolean abstractModifier = isAbstract(loadClass(target.getQualifiedName()).getModifiers());
@@ -61,13 +75,42 @@ class Renderer {
         for (Property property : target.getProperties()) {
             builderBuilder.addField(createField(property));
             builderBuilder.addMethod(createSetter(concreteClass, builderType, typeVariableS, property));
+
+            for (Class<?> sourceType : getSourceTypes(property)) {
+                builderBuilder.addMethod(
+                    createSetter(concreteClass, builderType, typeVariableS, property, sourceType));
+            }
         }
 
-        for (TargetClass.PropertyGroup property : target.getPropertyGroups()) {
-            builderBuilder.addMethod(createGroupSetter(concreteClass, builderType, typeVariableS, property));
+        for (TargetClass.PropertyGroup group : target.getPropertyGroups()) {
+            for (Iterable<IProperty> properties : combinePropertiesWithConverters(group.getProperties())) {
+                builderBuilder.addMethod(createGroupSetter(concreteClass, builderType, typeVariableS,
+                                                           group.getGroupName(), properties));
+            }
         }
 
         return builder(target.getPackageName(), builderBuilder.build()).build().toString();
+    }
+
+    private Iterable<Iterable<IProperty>> combinePropertiesWithConverters(Iterable<Property> properties) {
+        List<List<Class<?>>> allSourceTypes = new ArrayList<List<Class<?>>>();
+        for (Property property : properties) {
+            final List<Class<?>> sourceTypes = new ArrayList<Class<?>>();
+            sourceTypes.add((Class<?>) property.getTypeClass());
+            addAll(sourceTypes, getSourceTypes(property));
+            allSourceTypes.add(sourceTypes);
+        }
+
+        List<Iterable<IProperty>> result = new ArrayList<Iterable<IProperty>>();
+        for (List<Class<?>> argumentTypes : cartesianProduct(allSourceTypes)) {
+            List<IProperty> arguments = new ArrayList<IProperty>();
+            for (int i = 0; i < argumentTypes.size(); i++) {
+                Class<?> argumentType = argumentTypes.get(i);
+                arguments.add(new ExtProperty(argumentType, get(properties, i)));
+            }
+            result.add(arguments);
+        }
+        return result;
     }
 
     private FieldSpec createField(Property property) {
@@ -81,22 +124,48 @@ class Renderer {
 
     private MethodSpec createSetter(boolean concreteClass, ClassName builderType, TypeVariableName typeVariableS,
                                     Property property) {
-        return methodBuilder(property.getName())
-            .addModifiers(PUBLIC)
-            .addParameter(property.getTypeClass(), property.getName())
-            .returns(concreteClass ? builderType : typeVariableS)
+        return buildSetter(concreteClass, builderType, typeVariableS, property, property.getTypeClass())
             .addStatement("this.$N = $N", property.getName(), property.getName())
             .addStatement("return $N", concreteClass ? "this" : MYSELF)
             .build();
     }
 
+    private MethodSpec createSetter(boolean concreteClass, ClassName builderType, TypeVariableName typeVariableS,
+                                    Property property, Class<?> sourceType) {
+        ClassName converters = get(Converters.class);
+        CodeBlock block = builder()
+            .add("try {")
+            .indent()
+            .add("\n$T converters = $T.getInstance();", converters, converters)
+            .add("\nreturn $N(converters.convert($N, $N.class));", property.getName(), property.getName(),
+                 property.getQualifiedName())
+            .unindent()
+            .add("\n} catch(Exception e) {")
+            .indent()
+            .add("\nthrow new RuntimeException(e);")
+            .unindent()
+            .add("\n}\n")
+            .build();
+        return buildSetter(concreteClass, builderType, typeVariableS, property, sourceType)
+            .addCode(block)
+            .build();
+    }
+
+    private MethodSpec.Builder buildSetter(boolean concreteClass, ClassName builderType,
+                                           TypeVariableName typeVariableS, Property property, Type parameterType) {
+        return methodBuilder(property.getName())
+            .addModifiers(PUBLIC)
+            .addParameter(parameterType, property.getName())
+            .returns(concreteClass ? builderType : typeVariableS);
+    }
+
     private MethodSpec createGroupSetter(boolean concreteClass, ClassName builderType, TypeVariableName typeVariableS,
-                                         TargetClass.PropertyGroup propertyGroup) {
-        Builder builder = methodBuilder(propertyGroup.getGroupName())
+                                         String groupName, Iterable<? extends IProperty> properties) {
+        Builder builder = methodBuilder(groupName)
             .addModifiers(PUBLIC)
             .returns(concreteClass ? builderType : typeVariableS);
         StringBuilder statement = new StringBuilder();
-        for (Property property : propertyGroup.getProperties()) {
+        for (IProperty property : properties) {
             builder.addParameter(property.getTypeClass(), property.getName());
             if (statement.length() > 0) {
                 statement.append('.');
@@ -179,5 +248,33 @@ class Renderer {
             method.addStatement("$N.$N($N)", "object", property.getSetterName(), property.getName());
         }
         return method.build();
+    }
+
+    private Iterable<Class<?>> getSourceTypes(Property property) {
+        if (property.getTypeClass() instanceof Class) {
+            return converters.getSourceTypes((Class) property.getTypeClass());
+        } else {
+            return emptySet();
+        }
+    }
+
+    private static class ExtProperty implements IProperty {
+        private final Class<?> sourceType;
+        private final Property property;
+
+        private ExtProperty(Class<?> sourceType, Property property) {
+            this.sourceType = sourceType;
+            this.property = property;
+        }
+
+        @Override
+        public String getName() {
+            return property.getName();
+        }
+
+        @Override
+        public Type getTypeClass() {
+            return sourceType;
+        }
     }
 }
