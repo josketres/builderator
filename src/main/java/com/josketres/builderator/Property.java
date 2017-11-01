@@ -1,13 +1,25 @@
 package com.josketres.builderator;
 
-class Property implements Comparable<Property> {
+import com.google.common.reflect.TypeToken;
 
-    private String type;
+import java.lang.reflect.Type;
+
+class Property implements Comparable<Property>, IProperty {
+
+    private final String type;
+    private final String qualifiedName;
+
     private String name;
     private String setterName;
     private boolean shouldBeImported;
-    private String qualifiedName;
-    private Class<?> typeClass;
+    private TypeToken<?> typeClass;
+    private String defaultValue;
+
+    public Property(TypeToken<?> typeToken) {
+        this.typeClass = typeToken;
+        this.type = Utils.simpleName(typeToken.toString());
+        this.qualifiedName = typeToken.toString();
+    }
 
     public int compareTo(Property o) {
         return getName().compareTo(o.getName());
@@ -17,10 +29,7 @@ class Property implements Comparable<Property> {
         return type;
     }
 
-    public void setType(String type) {
-        this.type = type;
-    }
-
+    @Override
     public String getName() {
         return name;
     }
@@ -49,15 +58,28 @@ class Property implements Comparable<Property> {
         return qualifiedName;
     }
 
-    public void setQualifiedName(String qualifiedName) {
-        this.qualifiedName = qualifiedName;
+    @Override
+    public Type getTypeClass() {
+        return typeClass.getType();
     }
 
-    public void setTypeClass(Class<?> typeClass) {
-        this.typeClass = typeClass;
+    public String getDefaultValue() {
+        return defaultValue;
     }
 
-    public Class<?> getTypeClass() {
-        return typeClass;
+    public void setDefaultValue(String defaultValue) {
+        this.defaultValue = defaultValue;
+    }
+
+    @Override public String toString() {
+        return "Property{" +
+               "type='" + type + '\'' +
+               ", name='" + name + '\'' +
+               ", setterName='" + setterName + '\'' +
+               ", shouldBeImported=" + shouldBeImported +
+               ", qualifiedName='" + qualifiedName + '\'' +
+               ", typeClass=" + typeClass +
+               ", defaultValue=" + defaultValue +
+               '}';
     }
 }

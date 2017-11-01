@@ -14,11 +14,16 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
+import static java.lang.System.getProperty;
+import static org.junit.Assert.fail;
+
 public class TestCompiler {
 
     private final JavaCompiler compiler;
     private final DiagnosticCollector<JavaFileObject> diagnosticCollector;
     private final MemoryFileManager fileManager;
+    private final Map<String, Class<?>> classNameToClass = new HashMap<String, Class<?>>();
+    private ClassLoader classLoader;
 
     public TestCompiler() {
         compiler = ToolProvider.getSystemJavaCompiler();
@@ -39,8 +44,27 @@ public class TestCompiler {
         return task.call();
     }
 
+    public void assertCompilationSuccess() {
+        if (!diagnosticCollector.getDiagnostics().isEmpty()) {
+            String lineSeparator = getProperty("line.separator");
+            StringBuilder message = new StringBuilder("There was compilation failures :").append(lineSeparator);
+            for (Diagnostic<? extends JavaFileObject> d : this.diagnosticCollector.getDiagnostics()) {
+                message.append(d).append(lineSeparator);
+            }
+            fail(message.toString());
+        }
+    }
+
     public Class<?> loadClass(String name) throws ClassNotFoundException {
-        return fileManager.getClassLoader(null).loadClass(name);
+        Class<?> clazz = classNameToClass.get(name);
+        if (clazz == null) {
+            if (classLoader == null) {
+                classLoader = fileManager.getClassLoader(null);
+            }
+            clazz = classLoader.loadClass(name);
+            classNameToClass.put(name, clazz);
+        }
+        return clazz;
     }
 }
 
